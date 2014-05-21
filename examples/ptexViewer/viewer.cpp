@@ -103,16 +103,13 @@ OpenSubdiv::OsdCpuComputeController * g_cpuComputeController = NULL;
 #endif
 
 #ifdef OPENSUBDIV_HAS_CUDA
+    #include <osd/cuda.h>
     #include <osd/cudaGLVertexBuffer.h>
     #include <osd/cudaComputeContext.h>
     #include <osd/cudaComputeController.h>
 
-    #include <cuda_runtime_api.h>
-    #include <cuda_gl_interop.h>
-
     #include "../common/cudaInit.h"
 
-    bool g_cudaInitialized = false;
     OpenSubdiv::OsdCudaComputeController * g_cudaComputeController = NULL;
 #endif
 
@@ -1122,7 +1119,7 @@ createOsdMesh(int level, int kernel)
 #ifdef OPENSUBDIV_HAS_CUDA
     } else if (kernel == kCUDA) {
         if (not g_cudaComputeController) {
-            g_cudaComputeController = new OpenSubdiv::OsdCudaComputeController();
+            g_cudaComputeController = new OpenSubdiv::OsdCudaComputeController(cutGetMaxGflopsDeviceId());
         }
         g_mesh = new OpenSubdiv::OsdMesh<OpenSubdiv::OsdCudaGLVertexBuffer,
                                          OpenSubdiv::OsdCudaComputeController,
@@ -2073,7 +2070,6 @@ void uninitGL()
 
 #ifdef OPENSUBDIV_HAS_CUDA
     delete g_cudaComputeController;
-    cudaDeviceReset();
 #endif
 
 #ifdef OPENSUBDIV_HAS_GLSL_TRANSFORM_FEEDBACK
@@ -2536,12 +2532,6 @@ int main(int argc, char ** argv)
     // activate feature adaptive tessellation if OSD supports it
     g_adaptive = OpenSubdiv::OsdGLDrawContext::SupportsAdaptiveTessellation();
 
-#if OPENSUBDIV_HAS_CUDA
-    // Note: This function randomly crashes with linux 5.0-dev driver.
-    // cudaGetDeviceProperties overrun stack..?
-    cudaGLSetGLDevice(cutGetMaxGflopsDeviceId());
-#endif
-
     int windowWidth = g_width, windowHeight = g_height;
 #if GLFW_VERSION_MAJOR>=3
     // window size might not match framebuffer size on a high DPI display
@@ -2603,7 +2593,9 @@ int main(int argc, char ** argv)
     g_hud.AddPullDownButton(compute_pulldown, "GCD", kGCD);
 #endif
 #ifdef OPENSUBDIV_HAS_CUDA
-    g_hud.AddPullDownButton(compute_pulldown, "CUDA", kCUDA);
+    if (HAS_CUDA_VERSION_4_0()) {
+        g_hud.AddPullDownButton(compute_pulldown, "CUDA", kCUDA);
+    }
 #endif
 #ifdef OPENSUBDIV_HAS_OPENCL
     if (HAS_CL_VERSION_1_1()) {

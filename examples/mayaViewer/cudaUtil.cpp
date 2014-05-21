@@ -31,8 +31,7 @@
     #endif
 #endif
 
-#include <cuda_runtime_api.h>
-#include <cuda_gl_interop.h>
+#include <osd/cuda.h>
 #include <stdio.h>
 #include <algorithm>
 #include "../common/cudaInit.h"
@@ -41,7 +40,8 @@
 // between Maya includes and cuda includes...
 
 void cudaInit() {
-    cudaGLSetGLDevice(cutGetMaxGflopsDeviceId());
+    // Currently nothing to initialize.
+    // Bets device is being choosed when creating compute controller.
 }
 
 #endif

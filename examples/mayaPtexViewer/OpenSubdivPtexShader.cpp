@@ -404,7 +404,9 @@ OpenSubdivPtexShader::initialize()
     enumAttr.addField("CL",     OsdPtexMeshData::kCL);
 #endif
 #ifdef OPENSUBDIV_HAS_CUDA
-    enumAttr.addField("CUDA",   OsdPtexMeshData::kCUDA);
+    if (HAS_CUDA_VERSION_4_0()) {
+        enumAttr.addField("CUDA",   OsdPtexMeshData::kCUDA);
+    }
 #endif
     enumAttr.setInternal(true);
 

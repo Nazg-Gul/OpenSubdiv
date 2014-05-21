@@ -26,6 +26,7 @@
 #define OSD_CUDA_VERTEX_BUFFER_H
 
 #include "../version.h"
+#include "../osd/cuda.h"
 
 namespace OpenSubdiv {
 namespace OPENSUBDIV_VERSION {
@@ -55,7 +56,7 @@ public:
     int GetNumVertices() const;
 
     /// Returns cuda memory.
-    float * BindCudaBuffer();
+    CUdeviceptr BindCudaBuffer();
 
 protected:
     /// Constructor.
@@ -68,7 +69,7 @@ protected:
 private:
     int _numElements;
     int _numVertices;
-    void *_cudaMem;
+    CUdeviceptr _cudaMem;
 
 };
 

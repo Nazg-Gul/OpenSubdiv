@@ -354,6 +354,9 @@ checkMeshCL( OpenSubdiv::FarMesh<OpenSubdiv::OsdVertex>* farmesh,
              const std::vector<int>& remap ) {
 
 #ifdef OPENSUBDIV_HAS_OPENCL
+    if (!HAS_CL_VERSION_1_1()) {
+        return 0;
+    }
 
     static OpenSubdiv::OsdCLComputeController *controller = new OpenSubdiv::OsdCLComputeController(g_clContext, g_clQueue);
     

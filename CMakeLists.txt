@@ -283,6 +283,7 @@ option(NO_DOC "Disable documentation build" OFF)
 option(NO_OMP "Disable OpenMP backend" OFF)
 option(NO_TBB "Disable TBB backend" OFF)
 option(NO_CUDA "Disable CUDA backend" OFF)
+option(NO_CUEW "Disable CUEW wrapper library" OFF)
 option(NO_OPENCL "Disable OpenCL backend" OFF)
 option(NO_CLEW "Disable CLEW wrapper library" OFF)
 option(NO_NO_GCD "Disable GrandCentralDispatch backend" OFF)
@@ -308,6 +309,9 @@ if(NOT NO_OPENCL)
 endif()
 if(NOT NO_CUDA)
     find_package(CUDA 4.0)
+    if(CUDA_FOUND AND NOT NO_CUEW)
+        find_package(CUEW)
+    endif()
 endif()
 if(NOT ANDROID AND NOT IOS)
     find_package(GLFW 2.7.0)
@@ -433,14 +437,14 @@ if(OPENCL_FOUND)
     else()
         if (NOT NO_CLEW)
             message(WARNING
-                "OpenCL was not found, but CLEW was not. "
+                "OpenCL was found, but CLEW was not. "
                 "Building with OpenCL support enabled, but the build "
                 "wouldn't be portable on systems without OpenCL installed.")
         endif()
     endif()
 else()
     if (NOT NO_OPENCL)
-        message(WARNING
+        message(STATUS
             "OpenCL was not found : support for OpenCL parallel compute kernels "
             "will be disabled in Osd.  If you have the OpenCL SDK installed, "
             "please refer to the FindOpenCL.cmake in ${PROJECT_SOURCE_DIR}/cmake.")
@@ -451,6 +455,22 @@ if(CUDA_FOUND)
     add_definitions(
         -DOPENSUBDIV_HAS_CUDA
     )
+    if(CUEW_FOUND)
+        add_definitions(
+            -DOPENSUBDIV_HAS_CUEW
+        )
+        set(CUDA_INCLUDE_DIRS ${CUEW_INCLUDE_DIR})
+        set(CUDA_LIBRARIES ${CUEW_LIBRARY} ${CMAKE_DL_LIBS})
+    else()
+        set(CUDA_INCLUDE_DIRS ${CUDA_INCLUDE_DIRS})
+        set(CUDA_LIBRARIES ${CUDA_CUDA_LIBRARY})
+        if (NOT NO_CUEW)
+            message(STATUS
+                "CUDA was found, but CUEW was not. "
+                "Building with CUDA support enabled, but the build "
+                "wouldn't be portable on systems without CUDA installed.")
+        endif()
+    endif()
 else()
     if (NOT NO_CUDA)
         message(WARNING
@@ -610,8 +630,9 @@ endmacro()
 # Macro for adding a cuda executable if cuda is found and a regular
 # executable otherwise.
 macro(_add_possibly_cuda_executable target)
-    if(CUDA_FOUND)
-        cuda_add_executable(${target} ${ARGN})
+    if(CUDA_FOUND AND NOT CUEW_FOUND)
+        add_executable(${target} ${ARGN})
+        target_link_libraries(${target} ${CUDA_LIBRARIES})
     else()
         add_executable(${target} ${ARGN})
     endif()
@@ -625,8 +646,9 @@ endmacro()
 # Macro for adding a cuda library if cuda is found and a regular
 # library otherwise.
 macro(_add_possibly_cuda_library target)
-    if(CUDA_FOUND)
-        cuda_add_library(${target} ${ARGN})
+    if(CUDA_FOUND AND NOT CUEW_FOUND)
+        add_library(${target} ${ARGN})
+        target_link_libraries(${target} ${CUDA_LIBRARIES})
     else()
         add_library(${target} ${ARGN})
     endif()
@@ -655,6 +677,53 @@ macro(_add_glfw_executable target)
     endif()
 
 endmacro()
+
+# Compile CUDA kernels into fat binaries files.
+# List of sources might contain all sort files, but
+# only .cu files will be processed.
+# varname defines which variable will store list
+# of compiled binaries in the parent context.
+function(_compile_cuda_kernels src_files varname)
+    set(cuda_fatbins)
+    foreach(src_file ${src_files})
+        GET_FILENAME_COMPONENT(extension ${src_file} EXT)
+
+        if(${extension} STREQUAL ".cu")
+            get_filename_component(fatbin_file ${src_file} NAME_WE)
+            set(cuda_fatbin "${CMAKE_CURRENT_BINARY_DIR}/${fatbin_file}.fatbin")
+            set(cuda_sources ${src_file} ../version.h)
+            add_custom_command(OUTPUT ${cuda_fatbin}
+                               COMMAND ${CUDA_NVCC_EXECUTABLE}
+                                       -arch=sm_11
+                                       --fatbin ${CMAKE_CURRENT_SOURCE_DIR}/${src_file}
+                               DEPENDS ${cuda_sources})
+
+        endif()
+        list(APPEND cuda_fatbins ${cuda_fatbin})
+    endforeach()
+    set(${varname} ${cuda_fatbins} PARENT_SCOPE)
+endfunction()
+
+# Convert binatry file to C-like array which could be included into other sources.
+# Mainly used to store compiled CUDA kernels in osdGPU library itself and don't
+# store them externally.
+function(_datatocpp src_files varname)
+    set(cpp_files "")
+    foreach(src_file ${src_files})
+        GET_FILENAME_COMPONENT(cpp_file ${src_file} NAME_WE)
+        SET(cpp_file "${cpp_file}.gen.cpp")
+        list(APPEND cpp_files "${cpp_file}")
+        add_custom_command(
+            OUTPUT
+                "${CMAKE_CURRENT_BINARY_DIR}/${cpp_file}"
+            COMMAND
+                datatocpp "${src_file}" "${CMAKE_CURRENT_BINARY_DIR}/${cpp_file}"
+            DEPENDS
+                datatocpp "${src_file}"
+        )
+    endforeach()
+    set(${varname} ${cpp_files} PARENT_SCOPE)
+endfunction()
 
 #-------------------------------------------------------------------------------
 # Build targets

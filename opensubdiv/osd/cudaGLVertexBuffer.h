@@ -27,11 +27,8 @@
 #define OSD_CUDA_GL_VERTEX_BUFFER_H
 
 #include "../version.h"
-
 #include "../osd/opengl.h"
-
-#include <cuda_runtime.h>
-#include <cuda_gl_interop.h>
+#include "../osd/cuda.h"
 
 namespace OpenSubdiv {
 namespace OPENSUBDIV_VERSION {
@@ -64,7 +61,7 @@ public:
 
     /// Returns cuda memory. GL buffer will be mapped to cuda resource
     /// if necessary.
-    float * BindCudaBuffer();
+    CUdeviceptr BindCudaBuffer();
 
     /// Returns the GL buffer object. If the buffer is mapped as a cuda
     /// resource, it will be unmapped back to GL.
@@ -88,8 +85,8 @@ private:
     int _numElements;
     int _numVertices;
     GLuint _vbo;
-    void *_devicePtr;
-    struct cudaGraphicsResource *_cudaResource;
+    CUdeviceptr _devicePtr;
+    CUgraphicsResource _cudaResource;
 };
 
 }  // end namespace OPENSUBDIV_VERSION

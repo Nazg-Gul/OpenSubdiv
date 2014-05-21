@@ -23,12 +23,9 @@
 //
 
 #include "../osd/cudaGLVertexBuffer.h"
+#include "../osd/cuda.h"
 #include "../osd/error.h"
-
 #include "../osd/opengl.h"
-
-#include <cuda_runtime.h>
-#include <cuda_gl_interop.h>
 
 #include <cassert>
 
@@ -43,7 +40,7 @@ OsdCudaGLVertexBuffer::OsdCudaGLVertexBuffer(int numElements, int numVertices)
 OsdCudaGLVertexBuffer::~OsdCudaGLVertexBuffer() {
 
     unmap();
-    cudaGraphicsUnregisterResource(_cudaResource);
+    cuGraphicsUnregisterResource(_cudaResource);
     glDeleteBuffers(1, &_vbo);
 }
 
@@ -61,13 +58,12 @@ void
 OsdCudaGLVertexBuffer::UpdateData(const float *src, int startVertex, int numVertices) {
 
     map();
-    cudaError_t err = cudaMemcpy((float*)_devicePtr + _numElements * startVertex,
-                                 src,
-                                 _numElements * numVertices * sizeof(float),
-                                 cudaMemcpyHostToDevice);
-    if (err != cudaSuccess)
+    CUresult err = cuMemcpyHtoD(_devicePtr + _numElements * startVertex,
+                                src,
+                                _numElements * numVertices * sizeof(float));
+    if (err != CUDA_SUCCESS)
         OsdError(OSD_CUDA_GL_ERROR, "OsdCudaGLVertexBuffer::UpdateData failed. : %s\n",
-                 cudaGetErrorString(err));
+                 cuda_GetErrorString(err));
 }
 
 int
@@ -82,11 +78,11 @@ OsdCudaGLVertexBuffer::GetNumVertices() const {
     return _numVertices;
 }
 
-float *
+CUdeviceptr
 OsdCudaGLVertexBuffer::BindCudaBuffer() {
 
     map();
-    return static_cast<float*>(_devicePtr);
+    return _devicePtr;
 }
 
 GLuint
@@ -116,10 +112,10 @@ OsdCudaGLVertexBuffer::allocate() {
     }
 
     // register vbo as cuda resource
-    cudaError_t err = cudaGraphicsGLRegisterBuffer(
-        &_cudaResource, _vbo, cudaGraphicsMapFlagsWriteDiscard);
+    CUresult err = cuGraphicsGLRegisterBuffer(
+        &_cudaResource, _vbo, CU_GRAPHICS_MAP_RESOURCE_FLAGS_WRITE_DISCARD);
 
-    if (err != cudaSuccess) return false;
+    if (err != CUDA_SUCCESS) return false;
     return true;
 }
 
@@ -128,25 +124,25 @@ OsdCudaGLVertexBuffer::map() {
 
     if (_devicePtr) return;
     size_t num_bytes;
-    void *ptr;
+    CUdeviceptr ptr;
 
-    cudaError_t err = cudaGraphicsMapResources(1, &_cudaResource, 0);
-    if (err != cudaSuccess)
-        OsdError(OSD_CUDA_GL_ERROR, "OsdCudaGLVertexBuffer::map failed.\n%s\n", cudaGetErrorString(err));
-    err = cudaGraphicsResourceGetMappedPointer(&ptr, &num_bytes, _cudaResource);
-    if (err != cudaSuccess)
-        OsdError(OSD_CUDA_GL_ERROR, "OsdCudaGLVertexBuffer::map failed.\n%s\n", cudaGetErrorString(err));
+    CUresult err = cuGraphicsMapResources(1, &_cudaResource, 0);
+    if (err != CUDA_SUCCESS)
+        OsdError(OSD_CUDA_GL_ERROR, "OsdCudaGLVertexBuffer::map failed.\n%s\n", cuda_GetErrorString(err));
+    err = cuGraphicsResourceGetMappedPointer(&ptr, &num_bytes, _cudaResource);
+    if (err != CUDA_SUCCESS)
+        OsdError(OSD_CUDA_GL_ERROR, "OsdCudaGLVertexBuffer::map failed.\n%s\n", cuda_GetErrorString(err));
     _devicePtr = ptr;
 }
 
 void
 OsdCudaGLVertexBuffer::unmap() {
 
-    if (_devicePtr == NULL) return;
-    cudaError_t err = cudaGraphicsUnmapResources(1, &_cudaResource, 0);
-    if (err != cudaSuccess)
-        OsdError(OSD_CUDA_GL_ERROR, "OsdCudaGLVertexBuffer::unmap failed.\n%s\n", cudaGetErrorString(err));
-    _devicePtr = NULL;
+    if (_devicePtr == 0) return;
+    CUresult err = cuGraphicsUnmapResources(1, &_cudaResource, 0);
+    if (err != CUDA_SUCCESS)
+        OsdError(OSD_CUDA_GL_ERROR, "OsdCudaGLVertexBuffer::unmap failed.\n%s\n", cuda_GetErrorString(err));
+    _devicePtr = 0;
 }
 
 

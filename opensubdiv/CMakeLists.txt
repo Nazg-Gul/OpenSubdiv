@@ -23,6 +23,7 @@
 #
 
 if(OPENGL_FOUND OR OPENCL_FOUND OR DXSDK_FOUND OR CUDA_FOUND)
+    add_subdirectory(tools/datatocpp)
     add_subdirectory(tools/stringify)
 endif()
 

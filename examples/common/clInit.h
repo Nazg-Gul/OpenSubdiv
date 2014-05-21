@@ -56,6 +56,7 @@ static bool HAS_CL_VERSION_1_1 () {
     return false;
 #endif
 }
+
 static bool initCL(cl_context *clContext, cl_command_queue *clQueue)
 {
     cl_int ciErrNum;

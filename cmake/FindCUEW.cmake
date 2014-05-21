@@ -1,5 +1,5 @@
 #
-#   Copyright 2013 Pixar
+#   Copyright 2014 Pixar
 #
 #   Licensed under the Apache License, Version 2.0 (the "Apache License")
 #   with the following modification; you may not use this file except in
@@ -22,40 +22,57 @@
 #   language governing permissions and limitations under the Apache License.
 #
 
-# *** glStencilViewer ***
+# Try to find CUEW library and include path.
+# Once done this will define
+#
+# CUEW_FOUND
+# CUEW_INCLUDE_DIR
+# CUEW_LIBRARY
+#
 
-list(APPEND PLATFORM_LIBRARIES
-    "${OSD_LINK_TARGET}"
-    "${GLFW_LIBRARIES}"
-)
+include (FindPackageHandleStandardArgs)
 
-include_directories(
-    "${PROJECT_SOURCE_DIR}/opensubdiv"
-    "${PROJECT_SOURCE_DIR}/regression"
-    "${GLFW_INCLUDE_DIR}"
-)
-
-if ( GLEW_FOUND )
-    include_directories("${GLEW_INCLUDE_DIR}")
-    list(APPEND PLATFORM_LIBRARIES "${GLEW_LIBRARY}")
+if(WIN32)
+  set(_cuew_SEARCH_DIRS
+    "${CUEW_LOCATION}/include"
+    "$ENV{CUEW_LOCATION}/include"
+    "$ENV{PROGRAMFILES}/CUEW/include"
+    "${PROJECT_SOURCE_DIR}/extern/cuew/include"
+  )
+else()
+  set(_cuew_SEARCH_DIRS
+      "${CUEW_LOCATION}"
+      "$ENV{CUEW_LOCATION}"
+      /usr
+      /usr/local
+      /sw
+      /opt/local
+      /opt/lib/cuew
+  )
 endif()
 
-if( CUDA_FOUND )
-    include_directories("${CUDA_INCLUDE_DIRS}")
-endif()
+find_path(CUEW_INCLUDE_DIR
+  NAMES
+    cuew.h
+  HINTS
+    ${_cuew_SEARCH_DIRS}
+  PATH_SUFFIXES
+    include
+  NO_DEFAULT_PATH
+  DOC "The directory where cuew.h resides")
 
-if( OPENCL_FOUND )
-    include_directories("${OPENCL_INCLUDE_DIRS}")
-endif()
+find_library(CUEW_LIBRARY
+  NAMES
+    CUEW cuew
+  PATHS
+    ${_cuew_SEARCH_DIRS}
+  PATH_SUFFIXES
+    lib lib64
+  NO_DEFAULT_PATH
+  DOC "The CUEW library")
 
-_add_glfw_executable(glStencilViewer
-    main.cpp
-    "${INC_FILES}"
-    $<TARGET_OBJECTS:examples_common_obj>
+find_package_handle_standard_args(CUEW
+    REQUIRED_VARS
+        CUEW_INCLUDE_DIR
+        CUEW_LIBRARY
 )
-
-target_link_libraries(glStencilViewer
-    ${PLATFORM_LIBRARIES}
-)
-
-install(TARGETS glStencilViewer DESTINATION "${CMAKE_BINDIR_BASE}")

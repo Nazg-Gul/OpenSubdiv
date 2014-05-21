@@ -389,6 +389,7 @@ list(APPEND DOXY_HEADER_FILES ${OPENCL_PUBLIC_HEADERS})
 #-------------------------------------------------------------------------------
 # CUDA code & dependencies
 set(CUDA_PUBLIC_HEADERS
+    cuda.h
     cudaComputeContext.h
     cudaComputeController.h
     cudaVertexBuffer.h
@@ -403,6 +404,10 @@ if( CUDA_FOUND )
     list(APPEND KERNEL_FILES
         cudaKernel.cu
     )
+    list(APPEND PLATFORM_GPU_LIBRARIES
+        ${CUDA_LIBRARIES}
+    )
+    include_directories("${CUDA_INCLUDE_DIRS}")
     if ( OPENGL_FOUND )
         list(APPEND GPU_SOURCE_FILES
             cudaGLVertexBuffer.cpp
@@ -419,10 +424,6 @@ if( CUDA_FOUND )
         list(APPEND PUBLIC_HEADER_FILES
             cudaD3D11VertexBuffer.h
         )
-    endif()
-
-    if (UNIX)
-        list( APPEND CUDA_NVCC_FLAGS -Xcompiler -fPIC --gpu-architecture compute_11 )
     endif()
 endif()
 
@@ -468,18 +469,17 @@ if (NOT NO_LIB)
         ${PLATFORM_CPU_LIBRARIES}
     )
 
-    # this macro uses FindCUDA.cmake to compile .cu kernel files
-    # the target then adds the other obj dependencies and include files
+    # Compile kernel sources into fat binaries and convert them
+    # to C-arrays so they can be linked into osdGPU library
+    _compile_cuda_kernels("${KERNEL_FILES}" CUDA_FATBINS)
+    _datatocpp("${CUDA_FATBINS}" DATATOCPP_CUDA_FATBINS)
+
     _add_possibly_cuda_library(osd_static_gpu
         STATIC
             $<TARGET_OBJECTS:osd_gpu_obj>
-            ${KERNEL_FILES}
+            ${DATATOCPP_CUDA_FATBINS}
     )
     set_target_properties(osd_static_gpu PROPERTIES OUTPUT_NAME osdGPU CLEAN_DIRECT_OUTPUT 1)
-
-    target_link_libraries(osd_static_gpu
-        ${PLATFORM_CPU_LIBRARIES} ${PLATFORM_GPU_LIBRARIES}
-    )
 
     install( TARGETS osd_static_cpu DESTINATION "${CMAKE_LIBDIR_BASE}" )
     install( TARGETS osd_static_gpu DESTINATION "${CMAKE_LIBDIR_BASE}" )
@@ -514,7 +514,7 @@ if (NOT NO_LIB)
         _add_possibly_cuda_library(osd_dynamic_gpu
             SHARED
             $<TARGET_OBJECTS:osd_gpu_obj>
-            ${KERNEL_FILES}
+            ${DATATOCPP_CUDA_FATBINS}
         )
 
         set_target_properties(osd_dynamic_gpu
@@ -522,7 +522,7 @@ if (NOT NO_LIB)
                 OUTPUT_NAME osdGPU
                 CLEAN_DIRECT_OUTPUT 1
                 SOVERSION ${OSD_SONAME}
-            )
+        )
 
         target_link_libraries(osd_dynamic_gpu
             osd_dynamic_cpu

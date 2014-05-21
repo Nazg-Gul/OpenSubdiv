@@ -43,6 +43,10 @@ include_directories(
     "${GLFW_INCLUDE_DIR}"
 )
 
+if( CUDA_FOUND )
+    include_directories("${CUDA_INCLUDE_DIRS}")
+endif()
+
 if( OPENCL_FOUND )
     include_directories("${OPENCL_INCLUDE_DIRS}")
 endif()

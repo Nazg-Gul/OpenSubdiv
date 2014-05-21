@@ -83,15 +83,12 @@
 #endif
 
 #ifdef OPENSUBDIV_HAS_CUDA
+    #include <osd/cuda.h>
     #include <osd/cudaGLVertexBuffer.h>
     #include <osd/cudaComputeContext.h>
     #include <osd/cudaComputeController.h>
 
-    #include <cuda_runtime_api.h>
-    #include <cuda_gl_interop.h>
-
     #include "../common/cudaInit.h"
-    bool g_cudaInitialized = false;
 #endif
 
 #ifdef OPENSUBDIV_HAS_GLSL_TRANSFORM_FEEDBACK
@@ -1369,13 +1366,6 @@ callbackKernel(int k)
     }
 #endif
 
-#ifdef OPENSUBDIV_HAS_CUDA
-    if (g_kernel == kCUDA and g_cudaInitialized == false) {
-        g_cudaInitialized = true;
-        cudaGLSetGLDevice( cutGetMaxGflopsDeviceId() );
-    }
-#endif
-
     rebuildOsdMesh();
 }
 
@@ -1451,7 +1441,9 @@ initHUD()
     g_hud.AddPullDownButton(compute_pulldown, "GCD", kGCD);
 #endif
 #ifdef OPENSUBDIV_HAS_CUDA
-    g_hud.AddPullDownButton(compute_pulldown, "CUDA", kCUDA);
+    if (HAS_CUDA_VERSION_4_0()) {
+        g_hud.AddPullDownButton(compute_pulldown, "CUDA", kCUDA);
+    }
 #endif
 #ifdef OPENSUBDIV_HAS_OPENCL
     if (HAS_CL_VERSION_1_1()) {

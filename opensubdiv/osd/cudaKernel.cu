@@ -75,7 +75,7 @@ __device__ void addWithWeight(float *dst, float *src, float weight, int count)
     for(int i = 0; i < count; ++i) dst[i] += src[i] * weight;
 }
 
-template <int NUM_VERTEX_ELEMENTS, int NUM_VARYING_ELEMENTS> __global__ void
+template <int NUM_VERTEX_ELEMENTS, int NUM_VARYING_ELEMENTS> __device__ void
 computeFace(float *fVertex, float *fVaryings, int *F0_IT, int *F0_ITa, int offset, int tableOffset, int start, int end)
 {
     DeviceVertex<NUM_VERTEX_ELEMENTS> *vertex = (DeviceVertex<NUM_VERTEX_ELEMENTS>*)fVertex;
@@ -112,7 +112,7 @@ computeFace(float *fVertex, float *fVaryings, int *F0_IT, int *F0_ITa, int offse
     }
 }
 
-__global__ void
+__device__ void
 computeFace(float *fVertex, float *fVarying,
             int vertexLength, int vertexStride,
             int varyingLength, int varyingStride,
@@ -140,7 +140,7 @@ computeFace(float *fVertex, float *fVarying,
     }
 }
 
-template <int NUM_VERTEX_ELEMENTS, int NUM_VARYING_ELEMENTS> __global__ void
+template <int NUM_VERTEX_ELEMENTS, int NUM_VARYING_ELEMENTS> __device__ void
 computeEdge(float *fVertex, float *fVaryings, int *E0_IT, float *E0_S, int offset, int tableOffset, int start, int end)
 {
     DeviceVertex<NUM_VERTEX_ELEMENTS> *vertex = (DeviceVertex<NUM_VERTEX_ELEMENTS>*)fVertex;
@@ -182,7 +182,7 @@ computeEdge(float *fVertex, float *fVaryings, int *E0_IT, float *E0_S, int offse
     }
 }
 
-__global__ void
+__device__ void
 computeEdge(float *fVertex, float *fVarying,
             int vertexLength, int vertexStride,
             int varyingLength, int varyingStride,
@@ -222,7 +222,7 @@ computeEdge(float *fVertex, float *fVarying,
     }
 }
 
-template <int NUM_VERTEX_ELEMENTS, int NUM_VARYING_ELEMENTS> __global__ void
+template <int NUM_VERTEX_ELEMENTS, int NUM_VARYING_ELEMENTS> __device__ void
 computeVertexA(float *fVertex, float *fVaryings, int *V0_ITa, float *V0_S, int offset, int tableOffset, int start, int end, int pass)
 {
     DeviceVertex<NUM_VERTEX_ELEMENTS> *vertex = (DeviceVertex<NUM_VERTEX_ELEMENTS>*)fVertex;
@@ -271,7 +271,7 @@ computeVertexA(float *fVertex, float *fVaryings, int *V0_ITa, float *V0_S, int o
     }
 }
 
-__global__ void
+__device__ void
 computeVertexA(float *fVertex, float *fVaryings,
                int vertexLength, int vertexStride,
                int varyingLength, int varyingStride,
@@ -321,7 +321,7 @@ computeVertexA(float *fVertex, float *fVaryings,
 
 //texture <int, 1> texV0_IT;
 
-template <int NUM_VERTEX_ELEMENTS, int NUM_VARYING_ELEMENTS> __global__ void
+template <int NUM_VERTEX_ELEMENTS, int NUM_VARYING_ELEMENTS> __device__ void
 computeVertexB(float *fVertex, float *fVaryings,
                const int *V0_ITa, const int *V0_IT, const float *V0_S, int offset, int tableOffset, int start, int end)
 {
@@ -362,7 +362,7 @@ computeVertexB(float *fVertex, float *fVaryings,
     }
 }
 
-__global__ void
+__device__ void
 computeVertexB(float *fVertex, float *fVarying,
                int vertexLength, int vertexStride,
                int varyingLength, int varyingStride,
@@ -400,7 +400,7 @@ computeVertexB(float *fVertex, float *fVarying,
 
 // --------------------------------------------------------------------------------------------
 
-template <int NUM_VERTEX_ELEMENTS, int NUM_VARYING_ELEMENTS> __global__ void
+template <int NUM_VERTEX_ELEMENTS, int NUM_VARYING_ELEMENTS> __device__ void
 computeLoopVertexB(float *fVertex, float *fVaryings, int *V0_ITa, int *V0_IT, float *V0_S, int offset, int tableOffset, int start, int end)
 {
     DeviceVertex<NUM_VERTEX_ELEMENTS> *vertex = (DeviceVertex<NUM_VERTEX_ELEMENTS>*)fVertex;
@@ -438,7 +438,7 @@ computeLoopVertexB(float *fVertex, float *fVaryings, int *V0_ITa, int *V0_IT, fl
     }
 }
 
-__global__ void
+__device__ void
 computeLoopVertexB(float *fVertex, float *fVarying,
                    int vertexLength, int vertexStride,
                    int varyingLength, int varyingStride,
@@ -476,7 +476,7 @@ computeLoopVertexB(float *fVertex, float *fVarying,
 
 // --------------------------------------------------------------------------------------------
 
-template <int NUM_VERTEX_ELEMENTS, int NUM_VARYING_ELEMENTS> __global__ void
+template <int NUM_VERTEX_ELEMENTS, int NUM_VARYING_ELEMENTS> __device__ void
 computeBilinearEdge(float *fVertex, float *fVaryings, int *E0_IT, int offset, int tableOffset, int start, int end)
 {
     DeviceVertex<NUM_VERTEX_ELEMENTS> *vertex = (DeviceVertex<NUM_VERTEX_ELEMENTS>*)fVertex;
@@ -506,7 +506,7 @@ computeBilinearEdge(float *fVertex, float *fVaryings, int *E0_IT, int offset, in
     }
 }
 
-__global__ void
+__device__ void
 computeBilinearEdge(float *fVertex, float *fVarying,
                     int vertexLength, int vertexStride,
                     int varyingLength, int varyingStride,
@@ -535,7 +535,7 @@ computeBilinearEdge(float *fVertex, float *fVarying,
     }
 }
 
-template <int NUM_VERTEX_ELEMENTS, int NUM_VARYING_ELEMENTS> __global__ void
+template <int NUM_VERTEX_ELEMENTS, int NUM_VARYING_ELEMENTS> __device__ void
 computeBilinearVertex(float *fVertex, float *fVaryings, int *V0_ITa, int offset, int tableOffset, int start, int end)
 {
     DeviceVertex<NUM_VERTEX_ELEMENTS> *vertex = (DeviceVertex<NUM_VERTEX_ELEMENTS>*)fVertex;
@@ -561,7 +561,7 @@ computeBilinearVertex(float *fVertex, float *fVaryings, int *V0_ITa, int offset,
     }
 }
 
-__global__ void
+__device__ void
 computeBilinearVertex(float *fVertex, float *fVarying,
                       int vertexLength, int vertexStride,
                       int varyingLength, int varyingStride,
@@ -587,7 +587,7 @@ computeBilinearVertex(float *fVertex, float *fVarying,
 
 // --------------------------------------------------------------------------------------------
 
-__global__ void
+__device__ void
 editVertexAdd(float *fVertex, int vertexLength, int vertexStride,
               int primVarOffset, int primVarWidth,
               int vertexOffset, int tableOffset, int start, int end,
@@ -612,138 +612,146 @@ editVertexAdd(float *fVertex, int vertexLength, int vertexStride,
 // XXX: this macro usage is tentative. Since cuda kernel can't be dynamically configured,
 // still trying to find better way to have optimized kernel..
 
-#define OPT_KERNEL(NUM_VERTEX_ELEMENTS, NUM_VARYING_ELEMENTS, KERNEL, X, Y, ARG) \
+#define OPT_KERNEL(NUM_VERTEX_ELEMENTS, NUM_VARYING_ELEMENTS, KERNEL, ARG) \
     if(vertexLength == NUM_VERTEX_ELEMENTS &&                           \
        varyingLength == NUM_VARYING_ELEMENTS &&                         \
        vertexStride == vertexLength &&                                  \
        varyingStride == varyingLength)                                  \
-    { KERNEL<NUM_VERTEX_ELEMENTS, NUM_VARYING_ELEMENTS><<<X,Y>>>ARG;    \
+    { KERNEL<NUM_VERTEX_ELEMENTS, NUM_VARYING_ELEMENTS>ARG;    \
         return;  }
 
 extern "C" {
 
-void OsdCudaComputeFace(float *vertex, float *varying,
-                        int vertexLength, int vertexStride,
-                        int varyingLength, int varyingStride,
-                        int *F_IT, int *F_ITa, int offset, int tableOffset, int start, int end)
+__global__ void
+OsdCudaComputeFace(float *vertex, float *varying,
+                   int vertexLength, int vertexStride,
+                   int varyingLength, int varyingStride,
+                   int *F_IT, int *F_ITa, int offset, int tableOffset, int start, int end)
 {
     //computeFace<3, 0><<<512,32>>>(vertex, varying, F_IT, F_ITa, offset, start, end);
-    OPT_KERNEL(0, 0, computeFace, 512, 32, (vertex, varying, F_IT, F_ITa, offset, tableOffset, start, end));
-    OPT_KERNEL(0, 3, computeFace, 512, 32, (vertex, varying, F_IT, F_ITa, offset, tableOffset, start, end));
-    OPT_KERNEL(3, 0, computeFace, 512, 32, (vertex, varying, F_IT, F_ITa, offset, tableOffset, start, end));
-    OPT_KERNEL(3, 3, computeFace, 512, 32, (vertex, varying, F_IT, F_ITa, offset, tableOffset, start, end));
+    OPT_KERNEL(0, 0, computeFace, (vertex, varying, F_IT, F_ITa, offset, tableOffset, start, end));
+    OPT_KERNEL(0, 3, computeFace, (vertex, varying, F_IT, F_ITa, offset, tableOffset, start, end));
+    OPT_KERNEL(3, 0, computeFace, (vertex, varying, F_IT, F_ITa, offset, tableOffset, start, end));
+    OPT_KERNEL(3, 3, computeFace, (vertex, varying, F_IT, F_ITa, offset, tableOffset, start, end));
 
     // fallback kernel (slow)
-    computeFace<<<512, 32>>>(vertex, varying,
-                             vertexLength, vertexStride, varyingLength, varyingStride,
-                             F_IT, F_ITa, offset, tableOffset, start, end);
+    computeFace(vertex, varying,
+                vertexLength, vertexStride, varyingLength, varyingStride,
+                F_IT, F_ITa, offset, tableOffset, start, end);
 }
 
 
-void OsdCudaComputeEdge(float *vertex, float *varying,
-                        int vertexLength, int vertexStride,
-                        int varyingLength, int varyingStride,
-                        int *E_IT, float *E_W, int offset, int tableOffset, int start, int end)
+__global__ void
+OsdCudaComputeEdge(float *vertex, float *varying,
+                   int vertexLength, int vertexStride,
+                   int varyingLength, int varyingStride,
+                   int *E_IT, float *E_W, int offset, int tableOffset, int start, int end)
 {
     //computeEdge<0, 3><<<512,32>>>(vertex, varying, E_IT, E_W, offset, start, end);
-    OPT_KERNEL(0, 0, computeEdge, 512, 32, (vertex, varying, E_IT, E_W, offset, tableOffset, start, end));
-    OPT_KERNEL(0, 3, computeEdge, 512, 32, (vertex, varying, E_IT, E_W, offset, tableOffset, start, end));
-    OPT_KERNEL(3, 0, computeEdge, 512, 32, (vertex, varying, E_IT, E_W, offset, tableOffset, start, end));
-    OPT_KERNEL(3, 3, computeEdge, 512, 32, (vertex, varying, E_IT, E_W, offset, tableOffset, start, end));
+    OPT_KERNEL(0, 0, computeEdge, (vertex, varying, E_IT, E_W, offset, tableOffset, start, end));
+    OPT_KERNEL(0, 3, computeEdge, (vertex, varying, E_IT, E_W, offset, tableOffset, start, end));
+    OPT_KERNEL(3, 0, computeEdge, (vertex, varying, E_IT, E_W, offset, tableOffset, start, end));
+    OPT_KERNEL(3, 3, computeEdge, (vertex, varying, E_IT, E_W, offset, tableOffset, start, end));
 
-    computeEdge<<<512, 32>>>(vertex, varying,
-                             vertexLength, vertexStride, varyingLength, varyingStride,
-                             E_IT, E_W, offset, tableOffset, start, end);
+    computeEdge(vertex, varying,
+                vertexLength, vertexStride, varyingLength, varyingStride,
+                E_IT, E_W, offset, tableOffset, start, end);
 }
 
-void OsdCudaComputeVertexA(float *vertex, float *varying,
-                           int vertexLength, int vertexStride,
-                           int varyingLength, int varyingStride,
-                           int *V_ITa, float *V_W, int offset, int tableOffset, int start, int end, int pass)
+__global__ void
+OsdCudaComputeVertexA(float *vertex, float *varying,
+                      int vertexLength, int vertexStride,
+                      int varyingLength, int varyingStride,
+                      int *V_ITa, float *V_W, int offset, int tableOffset, int start, int end, int pass)
 {
 //    computeVertexA<0, 3><<<512,32>>>(vertex, varying, V_ITa, V_W, offset, start, end, pass);
-    OPT_KERNEL(0, 0, computeVertexA, 512, 32, (vertex, varying, V_ITa, V_W, offset, tableOffset, start, end, pass));
-    OPT_KERNEL(0, 3, computeVertexA, 512, 32, (vertex, varying, V_ITa, V_W, offset, tableOffset, start, end, pass));
-    OPT_KERNEL(3, 0, computeVertexA, 512, 32, (vertex, varying, V_ITa, V_W, offset, tableOffset, start, end, pass));
-    OPT_KERNEL(3, 3, computeVertexA, 512, 32, (vertex, varying, V_ITa, V_W, offset, tableOffset, start, end, pass));
+    OPT_KERNEL(0, 0, computeVertexA, (vertex, varying, V_ITa, V_W, offset, tableOffset, start, end, pass));
+    OPT_KERNEL(0, 3, computeVertexA, (vertex, varying, V_ITa, V_W, offset, tableOffset, start, end, pass));
+    OPT_KERNEL(3, 0, computeVertexA, (vertex, varying, V_ITa, V_W, offset, tableOffset, start, end, pass));
+    OPT_KERNEL(3, 3, computeVertexA, (vertex, varying, V_ITa, V_W, offset, tableOffset, start, end, pass));
 
-    computeVertexA<<<512, 32>>>(vertex, varying,
-                                vertexLength, vertexStride, varyingLength, varyingStride,
-                                V_ITa, V_W, offset, tableOffset, start, end, pass);
+    computeVertexA(vertex, varying,
+                   vertexLength, vertexStride, varyingLength, varyingStride,
+                   V_ITa, V_W, offset, tableOffset, start, end, pass);
 }
 
-void OsdCudaComputeVertexB(float *vertex, float *varying,
-                           int vertexLength, int vertexStride,
-                           int varyingLength, int varyingStride,
-                           int *V_ITa, int *V_IT, float *V_W, int offset, int tableOffset, int start, int end)
+__global__ void
+OsdCudaComputeVertexB(float *vertex, float *varying,
+                      int vertexLength, int vertexStride,
+                      int varyingLength, int varyingStride,
+                      int *V_ITa, int *V_IT, float *V_W, int offset, int tableOffset, int start, int end)
 {
 //    computeVertexB<0, 3><<<512,32>>>(vertex, varying, V_ITa, V_IT, V_W, offset, start, end);
-    OPT_KERNEL(0, 0, computeVertexB, 512, 32, (vertex, varying, V_ITa, V_IT, V_W, offset, tableOffset, start, end));
-    OPT_KERNEL(0, 3, computeVertexB, 512, 32, (vertex, varying, V_ITa, V_IT, V_W, offset, tableOffset, start, end));
-    OPT_KERNEL(3, 0, computeVertexB, 512, 32, (vertex, varying, V_ITa, V_IT, V_W, offset, tableOffset, start, end));
-    OPT_KERNEL(3, 3, computeVertexB, 512, 32, (vertex, varying, V_ITa, V_IT, V_W, offset, tableOffset, start, end));
+    OPT_KERNEL(0, 0, computeVertexB, (vertex, varying, V_ITa, V_IT, V_W, offset, tableOffset, start, end));
+    OPT_KERNEL(0, 3, computeVertexB, (vertex, varying, V_ITa, V_IT, V_W, offset, tableOffset, start, end));
+    OPT_KERNEL(3, 0, computeVertexB, (vertex, varying, V_ITa, V_IT, V_W, offset, tableOffset, start, end));
+    OPT_KERNEL(3, 3, computeVertexB, (vertex, varying, V_ITa, V_IT, V_W, offset, tableOffset, start, end));
 
-    computeVertexB<<<512, 32>>>(vertex, varying,
-                                vertexLength, vertexStride, varyingLength, varyingStride,
-                                V_ITa, V_IT, V_W, offset, tableOffset, start, end);
+    computeVertexB(vertex, varying,
+                   vertexLength, vertexStride, varyingLength, varyingStride,
+                   V_ITa, V_IT, V_W, offset, tableOffset, start, end);
 }
 
-void OsdCudaComputeLoopVertexB(float *vertex, float *varying,
-                               int vertexLength, int vertexStride,
-                               int varyingLength, int varyingStride,
-                               int *V_ITa, int *V_IT, float *V_W, int offset, int tableOffset, int start, int end)
+__global__ void
+OsdCudaComputeLoopVertexB(float *vertex, float *varying,
+                          int vertexLength, int vertexStride,
+                          int varyingLength, int varyingStride,
+                          int *V_ITa, int *V_IT, float *V_W, int offset, int tableOffset, int start, int end)
 {
 //    computeLoopVertexB<0, 3><<<512,32>>>(vertex, varying, V_ITa, V_IT, V_W, offset, start, end);
-    OPT_KERNEL(0, 0, computeLoopVertexB, 512, 32, (vertex, varying, V_ITa, V_IT, V_W, offset, tableOffset, start, end));
-    OPT_KERNEL(0, 3, computeLoopVertexB, 512, 32, (vertex, varying, V_ITa, V_IT, V_W, offset, tableOffset, start, end));
-    OPT_KERNEL(3, 0, computeLoopVertexB, 512, 32, (vertex, varying, V_ITa, V_IT, V_W, offset, tableOffset, start, end));
-    OPT_KERNEL(3, 3, computeLoopVertexB, 512, 32, (vertex, varying, V_ITa, V_IT, V_W, offset, tableOffset, start, end));
+    OPT_KERNEL(0, 0, computeLoopVertexB, (vertex, varying, V_ITa, V_IT, V_W, offset, tableOffset, start, end));
+    OPT_KERNEL(0, 3, computeLoopVertexB, (vertex, varying, V_ITa, V_IT, V_W, offset, tableOffset, start, end));
+    OPT_KERNEL(3, 0, computeLoopVertexB, (vertex, varying, V_ITa, V_IT, V_W, offset, tableOffset, start, end));
+    OPT_KERNEL(3, 3, computeLoopVertexB, (vertex, varying, V_ITa, V_IT, V_W, offset, tableOffset, start, end));
 
-    computeLoopVertexB<<<512, 32>>>(vertex, varying,
-                                    vertexLength, vertexStride, varyingLength, varyingStride,
-                                    V_ITa, V_IT, V_W, offset, tableOffset, start, end);
+    computeLoopVertexB(vertex, varying,
+                       vertexLength, vertexStride, varyingLength, varyingStride,
+                       V_ITa, V_IT, V_W, offset, tableOffset, start, end);
 }
 
-void OsdCudaComputeBilinearEdge(float *vertex, float *varying,
-                                int vertexLength, int vertexStride,
-                                int varyingLength, int varyingStride,
-                                int *E_IT, int offset, int tableOffset, int start, int end)
+__global__ void
+OsdCudaComputeBilinearEdge(float *vertex, float *varying,
+                           int vertexLength, int vertexStride,
+                           int varyingLength, int varyingStride,
+                           int *E_IT, int offset, int tableOffset, int start, int end)
 {
     //computeBilinearEdge<0, 3><<<512,32>>>(vertex, varying, E_IT, offset, start, end);
-    OPT_KERNEL(0, 0, computeBilinearEdge, 512, 32, (vertex, varying, E_IT, offset, tableOffset, start, end));
-    OPT_KERNEL(0, 3, computeBilinearEdge, 512, 32, (vertex, varying, E_IT, offset, tableOffset, start, end));
-    OPT_KERNEL(3, 0, computeBilinearEdge, 512, 32, (vertex, varying, E_IT, offset, tableOffset, start, end));
-    OPT_KERNEL(3, 3, computeBilinearEdge, 512, 32, (vertex, varying, E_IT, offset, tableOffset, start, end));
+    OPT_KERNEL(0, 0, computeBilinearEdge, (vertex, varying, E_IT, offset, tableOffset, start, end));
+    OPT_KERNEL(0, 3, computeBilinearEdge, (vertex, varying, E_IT, offset, tableOffset, start, end));
+    OPT_KERNEL(3, 0, computeBilinearEdge, (vertex, varying, E_IT, offset, tableOffset, start, end));
+    OPT_KERNEL(3, 3, computeBilinearEdge, (vertex, varying, E_IT, offset, tableOffset, start, end));
 
-    computeBilinearEdge<<<512, 32>>>(vertex, varying,
-                                     vertexLength, vertexStride, varyingLength, varyingStride,
-                                     E_IT, offset, tableOffset, start, end);
+    computeBilinearEdge(vertex, varying,
+                        vertexLength, vertexStride, varyingLength, varyingStride,
+                        E_IT, offset, tableOffset, start, end);
 }
 
-void OsdCudaComputeBilinearVertex(float *vertex, float *varying,
-                                  int vertexLength, int vertexStride,
-                                  int varyingLength, int varyingStride,
-                                  int *V_ITa, int offset, int tableOffset, int start, int end)
+__global__ void
+OsdCudaComputeBilinearVertex(float *vertex, float *varying,
+                             int vertexLength, int vertexStride,
+                             int varyingLength, int varyingStride,
+                             int *V_ITa, int offset, int tableOffset, int start, int end)
 {
 //    computeBilinearVertex<0, 3><<<512,32>>>(vertex, varying, V_ITa, offset, start, end);
-    OPT_KERNEL(0, 0, computeBilinearVertex, 512, 32, (vertex, varying, V_ITa, offset, tableOffset, start, end));
-    OPT_KERNEL(0, 3, computeBilinearVertex, 512, 32, (vertex, varying, V_ITa, offset, tableOffset, start, end));
-    OPT_KERNEL(3, 0, computeBilinearVertex, 512, 32, (vertex, varying, V_ITa, offset, tableOffset, start, end));
-    OPT_KERNEL(3, 3, computeBilinearVertex, 512, 32, (vertex, varying, V_ITa, offset, tableOffset, start, end));
+    OPT_KERNEL(0, 0, computeBilinearVertex, (vertex, varying, V_ITa, offset, tableOffset, start, end));
+    OPT_KERNEL(0, 3, computeBilinearVertex, (vertex, varying, V_ITa, offset, tableOffset, start, end));
+    OPT_KERNEL(3, 0, computeBilinearVertex, (vertex, varying, V_ITa, offset, tableOffset, start, end));
+    OPT_KERNEL(3, 3, computeBilinearVertex, (vertex, varying, V_ITa, offset, tableOffset, start, end));
 
-    computeBilinearVertex<<<512, 32>>>(vertex, varying,
-                                       vertexLength, vertexStride, varyingLength, varyingStride,
-                                       V_ITa, offset, tableOffset, start, end);
+    computeBilinearVertex(vertex, varying,
+                          vertexLength, vertexStride, varyingLength, varyingStride,
+                          V_ITa, offset, tableOffset, start, end);
 }
 
-void OsdCudaEditVertexAdd(float *vertex, int vertexLength, int vertexStride,
-                          int primVarOffset, int primVarWidth,
-                          int vertexOffset, int tableOffset,
-                          int start, int end, int *editIndices, float *editValues)
+__global__ void
+OsdCudaEditVertexAdd(float *vertex, int vertexLength, int vertexStride,
+                     int primVarOffset, int primVarWidth,
+                     int vertexOffset, int tableOffset,
+                     int start, int end, int *editIndices, float *editValues)
 {
-    editVertexAdd<<<512, 32>>>(vertex, vertexLength, vertexStride, primVarOffset, primVarWidth,
-                               vertexOffset, tableOffset, start, end,
-                               editIndices, editValues);
+    editVertexAdd(vertex, vertexLength, vertexStride, primVarOffset, primVarWidth,
+                  vertexOffset, tableOffset, start, end,
+                  editIndices, editValues);
 }
 
 }  /* extern "C" */

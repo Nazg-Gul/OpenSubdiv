@@ -29,6 +29,7 @@
 
 #include "../far/subdivisionTables.h"
 #include "../far/vertexEditTables.h"
+#include "../osd/cuda.h"
 #include "../osd/vertex.h"
 #include "../osd/vertexDescriptor.h"
 #include "../osd/nonCopyable.h"
@@ -53,14 +54,14 @@ public:
 
     virtual ~OsdCudaTable();
 
-    void * GetCudaMemory() const;
+    CUdeviceptr GetCudaMemory() const;
 
 private:
-    OsdCudaTable() : _devicePtr(NULL) {}
+    OsdCudaTable() : _devicePtr(0) {}
 
     bool createCudaBuffer(size_t size, const void *ptr);
 
-    void *_devicePtr;
+    CUdeviceptr _devicePtr;
 };
 
 class OsdCudaHEditTable : OsdNonCopyable<OsdCudaHEditTable> {

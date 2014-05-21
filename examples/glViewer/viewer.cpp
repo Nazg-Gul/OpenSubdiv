@@ -84,16 +84,13 @@ OpenSubdiv::OsdCpuComputeController *g_cpuComputeController = NULL;
 #endif
 
 #ifdef OPENSUBDIV_HAS_CUDA
+    #include <osd/cuda.h>
     #include <osd/cudaGLVertexBuffer.h>
     #include <osd/cudaComputeContext.h>
     #include <osd/cudaComputeController.h>
 
-    #include <cuda_runtime_api.h>
-    #include <cuda_gl_interop.h>
-
     #include "../common/cudaInit.h"
 
-    bool g_cudaInitialized = false;
     OpenSubdiv::OsdCudaComputeController *g_cudaComputeController = NULL;
 #endif
 
@@ -745,7 +742,7 @@ createOsdMesh( const std::string &shape, int level, int kernel, Scheme scheme=kC
 #ifdef OPENSUBDIV_HAS_CUDA
     } else if(kernel == kCUDA) {
         if (not g_cudaComputeController) {
-            g_cudaComputeController = new OpenSubdiv::OsdCudaComputeController();
+            g_cudaComputeController = new OpenSubdiv::OsdCudaComputeController(cutGetMaxGflopsDeviceId());
         }
         g_mesh = new OpenSubdiv::OsdMesh<OpenSubdiv::OsdCudaGLVertexBuffer,
                                          OpenSubdiv::OsdCudaComputeController,
@@ -1541,7 +1538,6 @@ uninitGL() {
 
 #ifdef OPENSUBDIV_HAS_CUDA
     delete g_cudaComputeController;
-    cudaDeviceReset();
 #endif
 
 #ifdef OPENSUBDIV_HAS_GLSL_TRANSFORM_FEEDBACK
@@ -1645,12 +1641,6 @@ callbackKernel(int k)
             printf("Error in initializing OpenCL\n");
             exit(1);
         }
-    }
-#endif
-#ifdef OPENSUBDIV_HAS_CUDA
-    if (g_kernel == kCUDA and g_cudaInitialized == false) {
-        g_cudaInitialized = true;
-        cudaGLSetGLDevice( cutGetMaxGflopsDeviceId() );
     }
 #endif
 
@@ -1769,7 +1759,9 @@ initHUD()
     g_hud.AddPullDownButton(compute_pulldown, "GCD", kGCD);
 #endif
 #ifdef OPENSUBDIV_HAS_CUDA
-    g_hud.AddPullDownButton(compute_pulldown, "CUDA", kCUDA);
+    if (HAS_CUDA_VERSION_4_0()) {
+        g_hud.AddPullDownButton(compute_pulldown, "CUDA", kCUDA);
+    }
 #endif
 #ifdef OPENSUBDIV_HAS_OPENCL
     if (HAS_CL_VERSION_1_1()) {

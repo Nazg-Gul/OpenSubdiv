@@ -88,7 +88,6 @@ OpenSubdiv::OsdCpuComputeController *g_cpuComputeController = 0;
 #ifdef OPENSUBDIV_HAS_CUDA
     #include <osd/cudaComputeController.h>
 
-    extern void cudaInit();
     OpenSubdiv::OsdCudaComputeController *g_cudaComputeController = 0;
 #endif
 
@@ -432,7 +431,11 @@ initializePlugin(MObject obj)
 #endif
 
 #ifdef OPENSUBDIV_HAS_CUDA
-    cudaInit();
+    if (not HAS_CUDA_VERSION_4_0()) {
+        // XXX
+        printf("Error in loading CUDA libraries\n");
+        exit(1);
+    }
     g_cudaComputeController = new OpenSubdiv::OsdCudaComputeController();
 #endif
 

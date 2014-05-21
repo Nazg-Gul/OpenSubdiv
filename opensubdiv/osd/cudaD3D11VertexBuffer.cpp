@@ -23,10 +23,10 @@
 //
 
 #include "../osd/cudaD3D11VertexBuffer.h"
+#include "../osd/cuda.h"
 #include "../osd/error.h"
 
 #include <D3D11.h>
-#include <cuda_runtime.h>
 #include <cuda_d3d11_interop.h>
 #include <cassert>
 
@@ -61,9 +61,8 @@ void
 OsdCudaD3D11VertexBuffer::UpdateData(const float *src, int startVertex, int numVertices, void *param) {
 
     map();
-    cudaMemcpy((float*)_cudaBuffer + _numElements * startVertex,
-               src, _numElements * numVertices * sizeof(float),
-               cudaMemcpyHostToDevice);
+    cuMemcpyHtoD(_cudaBuffer + _numElements * startVertex * sizeof(float),
+                 src, _numElements * numVertices * sizeof(float))
 }
 
 int

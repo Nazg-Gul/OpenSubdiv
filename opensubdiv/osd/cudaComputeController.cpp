@@ -22,68 +22,64 @@
 //   language governing permissions and limitations under the Apache License.
 //
 
-#include "../osd/cudaComputeContext.h"
 #include "../osd/cudaComputeController.h"
+#include "../osd/cuda.h"
+#include "../osd/cudaComputeContext.h"
 
-#include <cuda_runtime.h>
+#include <stdio.h>
 #include <string.h>
 
-extern "C" {
-
-void OsdCudaComputeFace(float *vertex, float *varying,
-                        int vertexLength, int vertexStride,
-                        int varyingLength, int varyingStride,
-                        int *F_IT, int *F_ITa, int offset, int tableOffset, int start, int end);
-
-void OsdCudaComputeEdge(float *vertex, float *varying,
-                        int vertexLength, int vertexStride,
-                        int varyingLength, int varyingStride,
-                        int *E_IT, float *E_W, int offset, int tableOffset, int start, int end);
-
-void OsdCudaComputeVertexA(float *vertex, float *varying,
-                           int vertexLength, int vertexStride,
-                           int varyingLength, int varyingStride,
-                           int *V_ITa, float *V_W, int offset, int tableOffset,
-                           int start, int end, int pass);
-
-void OsdCudaComputeVertexB(float *vertex, float *varying,
-                           int vertexLength, int vertexStride,
-                           int varyingLength, int varyingStride,
-                           int *V_ITa, int *V_IT, float *V_W, int offset, int tableOffset,
-                           int start, int end);
-
-void OsdCudaComputeLoopVertexB(float *vertex, float *varying,
-                               int vertexLength, int vertexStride,
-                               int varyingLength, int varyingStride,
-                               int *V_ITa, int *V_IT, float *V_W, int offset, int tableOffset,
-                               int start, int end);
-
-void OsdCudaComputeBilinearEdge(float *vertex, float *varying,
-                                int vertexLength, int vertexStride,
-                                int varyingLength, int varyingStride,
-                                int *E_IT, int offset, int tableOffset, int start, int end);
-
-void OsdCudaComputeBilinearVertex(float *vertex, float *varying,
-                                  int vertexLength, int vertexStride,
-                                  int varyingLength, int varyingStride,
-                                  int *V_ITa, int offset, int tableOffset, int start, int end);
-
-void OsdCudaEditVertexAdd(float *vertex,
-                          int vertexLength, int vertexStride,
-                          int primVarOffset, int primVarWidth,
-                          int offset, int tableOffset,
-                          int start, int end, int *editIndices, float *editValues);
-
-}
+extern unsigned char datatoc_cudaKernel_fatbin[];
 
 namespace OpenSubdiv {
 namespace OPENSUBDIV_VERSION {
 
-OsdCudaComputeController::OsdCudaComputeController() {
+#define cuda_assert(statement) { \
+        CUresult result = statement; \
+        if (result != CUDA_SUCCESS) { \
+            fprintf(stderr, "CUDA error %s in %s\n", \
+                    cuda_GetErrorString(result), \
+                    #statement); \
+            abort(); \
+        } \
+    }
+
+OsdCudaComputeController::OsdCudaComputeController(int device_idx) {
+    cuInit(0);
+
+    CUdevice device;
+    // By default use first available device.
+    cuda_assert(cuDeviceGet(&device, device_idx));
+    cuda_assert(cuCtxCreate(&_context, 0, device));
+
+    cuda_assert(cuModuleLoadData(&_module, datatoc_cudaKernel_fatbin));
 }
 
 OsdCudaComputeController::~OsdCudaComputeController() {
+    cuda_assert(cuModuleUnload(_module));
+    cuda_assert(cuCtxDestroy(_context));
 }
+
+void OsdCudaComputeController::OsdCudaComputeDevince(int device_idx) {
+    // Keep an eue on this, only change device when all the kernel queues
+    // are empty.
+    CUdevice device;
+    cuda_assert(cuCtxDestroy(_context));
+    cuda_assert(cuDeviceGet(&device, device_idx));
+    cuda_assert(cuCtxCreate(&_context, 0, device));
+}
+
+#define cuda_run_kernel(function_name, args ...) { \
+        CUfunction function; \
+        cuda_assert(cuModuleGetFunction(&function, _module, #function_name)); \
+        void *kernel_params[] = { args }; \
+        cuLaunchKernel(function, \
+                       512, 1, 1, \
+                       32, 1, 1, \
+                       0, \
+                       NULL, kernel_params, NULL); \
+    } (void) 0
+
 
 void
 OsdCudaComputeController::ApplyBilinearFaceVerticesKernel(
@@ -96,16 +92,27 @@ OsdCudaComputeController::ApplyBilinearFaceVerticesKernel(
     assert(F_IT);
     assert(F_ITa);
 
-    float *vertex = _currentBindState.GetOffsettedVertexBuffer();
-    float *varying = _currentBindState.GetOffsettedVaryingBuffer();
+    CUdeviceptr vertex = _currentBindState.GetOffsettedVertexBuffer();
+    CUdeviceptr varying = _currentBindState.GetOffsettedVaryingBuffer();
+    CUdeviceptr F_IT_mem = F_IT->GetCudaMemory();
+    CUdeviceptr F_ITa_mem = F_ITa->GetCudaMemory();
 
-    OsdCudaComputeFace(
-        vertex, varying,
-        _currentBindState.vertexDesc.length, _currentBindState.vertexDesc.stride,
-        _currentBindState.varyingDesc.length, _currentBindState.varyingDesc.stride,
-        static_cast<int*>(F_IT->GetCudaMemory()),
-        static_cast<int*>(F_ITa->GetCudaMemory()),
-        batch.GetVertexOffset(), batch.GetTableOffset(), batch.GetStart(), batch.GetEnd());
+    int vertex_offset = batch.GetVertexOffset();
+    int table_offset = batch.GetTableOffset();
+    int start = batch.GetStart();
+    int end = batch.GetEnd();
+
+    cuda_run_kernel(OsdCudaComputeFace,
+                    &vertex, &varying,
+                    (void *)&_currentBindState.vertexDesc.length,
+                    (void *)&_currentBindState.vertexDesc.stride,
+                    (void *)&_currentBindState.varyingDesc.length,
+                    (void *)&_currentBindState.varyingDesc.stride,
+                    &F_IT_mem,
+                    &F_ITa_mem,
+                    &vertex_offset,
+                    &table_offset,
+                    &start, &end);
 }
 
 void
@@ -117,15 +124,24 @@ OsdCudaComputeController::ApplyBilinearEdgeVerticesKernel(
     const OsdCudaTable * E_IT = context->GetTable(FarSubdivisionTables::E_IT);
     assert(E_IT);
 
-    float *vertex = _currentBindState.GetOffsettedVertexBuffer();
-    float *varying = _currentBindState.GetOffsettedVaryingBuffer();
+    CUdeviceptr vertex = _currentBindState.GetOffsettedVertexBuffer();
+    CUdeviceptr varying = _currentBindState.GetOffsettedVaryingBuffer();
+    CUdeviceptr E_IT_mem = E_IT->GetCudaMemory();
+    int vertex_offset = batch.GetVertexOffset();
+    int table_offset = batch.GetTableOffset();
+    int start = batch.GetStart();
+    int end = batch.GetEnd();
 
-    OsdCudaComputeBilinearEdge(
-        vertex, varying,
-        _currentBindState.vertexDesc.length, _currentBindState.vertexDesc.stride,
-        _currentBindState.varyingDesc.length, _currentBindState.varyingDesc.stride,
-        static_cast<int*>(E_IT->GetCudaMemory()),
-        batch.GetVertexOffset(), batch.GetTableOffset(), batch.GetStart(), batch.GetEnd());
+    cuda_run_kernel(OsdCudaComputeBilinearEdge,
+                    &vertex, &varying,
+                    (void *)&_currentBindState.vertexDesc.length,
+                    (void *)&_currentBindState.vertexDesc.stride,
+                    (void *)&_currentBindState.varyingDesc.length,
+                    (void *)&_currentBindState.varyingDesc.stride,
+                    &E_IT_mem,
+                    &vertex_offset,
+                    &table_offset,
+                    &start, &end);
 }
 
 void
@@ -137,15 +153,24 @@ OsdCudaComputeController::ApplyBilinearVertexVerticesKernel(
     const OsdCudaTable * V_ITa = context->GetTable(FarSubdivisionTables::V_ITa);
     assert(V_ITa);
 
-    float *vertex = _currentBindState.GetOffsettedVertexBuffer();
-    float *varying = _currentBindState.GetOffsettedVaryingBuffer();
+    CUdeviceptr vertex = _currentBindState.GetOffsettedVertexBuffer();
+    CUdeviceptr varying = _currentBindState.GetOffsettedVaryingBuffer();
+    CUdeviceptr V_ITa_mem = V_ITa->GetCudaMemory();
+    int vertex_offset = batch.GetVertexOffset();
+    int table_offset = batch.GetTableOffset();
+    int start = batch.GetStart();
+    int end = batch.GetEnd();
 
-    OsdCudaComputeBilinearVertex(
-        vertex, varying,
-        _currentBindState.vertexDesc.length, _currentBindState.vertexDesc.stride,
-        _currentBindState.varyingDesc.length, _currentBindState.varyingDesc.stride,
-        static_cast<int*>(V_ITa->GetCudaMemory()),
-        batch.GetVertexOffset(), batch.GetTableOffset(), batch.GetStart(), batch.GetEnd());
+    cuda_run_kernel(OsdCudaComputeBilinearVertex,
+                    &vertex, &varying,
+                    (void *)&_currentBindState.vertexDesc.length,
+                    (void *)&_currentBindState.vertexDesc.stride,
+                    (void *)&_currentBindState.varyingDesc.length,
+                    (void *)&_currentBindState.varyingDesc.stride,
+                    &V_ITa_mem,
+                    &vertex_offset,
+                    &table_offset,
+                    &start, &end);
 }
 
 void
@@ -159,16 +184,26 @@ OsdCudaComputeController::ApplyCatmarkFaceVerticesKernel(
     assert(F_IT);
     assert(F_ITa);
 
-    float *vertex = _currentBindState.GetOffsettedVertexBuffer();
-    float *varying = _currentBindState.GetOffsettedVaryingBuffer();
+    CUdeviceptr vertex = _currentBindState.GetOffsettedVertexBuffer();
+    CUdeviceptr varying = _currentBindState.GetOffsettedVaryingBuffer();
+    CUdeviceptr F_IT_mem = F_IT->GetCudaMemory();
+    CUdeviceptr F_ITa_mem = F_ITa->GetCudaMemory();
+    int vertex_offset = batch.GetVertexOffset();
+    int table_offset = batch.GetTableOffset();
+    int start = batch.GetStart();
+    int end = batch.GetEnd();
 
-    OsdCudaComputeFace(
-        vertex, varying,
-        _currentBindState.vertexDesc.length, _currentBindState.vertexDesc.stride,
-        _currentBindState.varyingDesc.length, _currentBindState.varyingDesc.stride,
-        static_cast<int*>(F_IT->GetCudaMemory()),
-        static_cast<int*>(F_ITa->GetCudaMemory()),
-        batch.GetVertexOffset(), batch.GetTableOffset(), batch.GetStart(), batch.GetEnd());
+    cuda_run_kernel(OsdCudaComputeFace,
+                    &vertex, &varying,
+                    (void *)&_currentBindState.vertexDesc.length,
+                    (void *)&_currentBindState.vertexDesc.stride,
+                    (void *)&_currentBindState.varyingDesc.length,
+                    (void *)&_currentBindState.varyingDesc.stride,
+                    &F_IT_mem,
+                    &F_ITa_mem,
+                    &vertex_offset,
+                    &table_offset,
+                    &start, &end);
 }
 
 void
@@ -182,16 +217,26 @@ OsdCudaComputeController::ApplyCatmarkEdgeVerticesKernel(
     assert(E_IT);
     assert(E_W);
 
-    float *vertex = _currentBindState.GetOffsettedVertexBuffer();
-    float *varying = _currentBindState.GetOffsettedVaryingBuffer();
+    CUdeviceptr vertex = _currentBindState.GetOffsettedVertexBuffer();
+    CUdeviceptr varying = _currentBindState.GetOffsettedVaryingBuffer();
+    CUdeviceptr E_IT_mem = E_IT->GetCudaMemory();
+    CUdeviceptr E_W_mem = E_W->GetCudaMemory();
+    int vertex_offset = batch.GetVertexOffset();
+    int table_offset = batch.GetTableOffset();
+    int start = batch.GetStart();
+    int end = batch.GetEnd();
 
-    OsdCudaComputeEdge(
-        vertex, varying,
-        _currentBindState.vertexDesc.length, _currentBindState.vertexDesc.stride,
-        _currentBindState.varyingDesc.length, _currentBindState.varyingDesc.stride,
-        static_cast<int*>(E_IT->GetCudaMemory()),
-        static_cast<float*>(E_W->GetCudaMemory()),
-        batch.GetVertexOffset(), batch.GetTableOffset(), batch.GetStart(), batch.GetEnd());
+    cuda_run_kernel(OsdCudaComputeEdge,
+                    &vertex, &varying,
+                    (void *)&_currentBindState.vertexDesc.length,
+                    (void *)&_currentBindState.vertexDesc.stride,
+                    (void *)&_currentBindState.varyingDesc.length,
+                    (void *)&_currentBindState.varyingDesc.stride,
+                    &E_IT_mem,
+                    &E_W_mem,
+                    &vertex_offset,
+                    &table_offset,
+                    &start, &end);
 }
 
 void
@@ -207,17 +252,28 @@ OsdCudaComputeController::ApplyCatmarkVertexVerticesKernelB(
     assert(V_IT);
     assert(V_W);
 
-    float *vertex = _currentBindState.GetOffsettedVertexBuffer();
-    float *varying = _currentBindState.GetOffsettedVaryingBuffer();
+    CUdeviceptr vertex = _currentBindState.GetOffsettedVertexBuffer();
+    CUdeviceptr varying = _currentBindState.GetOffsettedVaryingBuffer();
+    CUdeviceptr V_ITa_mem = V_ITa->GetCudaMemory();
+    CUdeviceptr V_IT_mem = V_IT->GetCudaMemory();
+    CUdeviceptr V_W_mem = V_W->GetCudaMemory();
+    int vertex_offset = batch.GetVertexOffset();
+    int table_offset = batch.GetTableOffset();
+    int start = batch.GetStart();
+    int end = batch.GetEnd();
 
-    OsdCudaComputeVertexB(
-        vertex, varying,
-        _currentBindState.vertexDesc.length, _currentBindState.vertexDesc.stride,
-        _currentBindState.varyingDesc.length, _currentBindState.varyingDesc.stride,
-        static_cast<int*>(V_ITa->GetCudaMemory()),
-        static_cast<int*>(V_IT->GetCudaMemory()),
-        static_cast<float*>(V_W->GetCudaMemory()),
-        batch.GetVertexOffset(), batch.GetTableOffset(), batch.GetStart(), batch.GetEnd());
+    cuda_run_kernel(OsdCudaComputeVertexB,
+                    &vertex, &varying,
+                    (void *)&_currentBindState.vertexDesc.length,
+                    (void *)&_currentBindState.vertexDesc.stride,
+                    (void *)&_currentBindState.varyingDesc.length,
+                    (void *)&_currentBindState.varyingDesc.stride,
+                    &V_ITa_mem,
+                    &V_IT_mem,
+                    &V_W_mem,
+                    &vertex_offset,
+                    &table_offset,
+                    &start, &end);
 }
 
 void
@@ -231,16 +287,27 @@ OsdCudaComputeController::ApplyCatmarkVertexVerticesKernelA1(
     assert(V_ITa);
     assert(V_W);
 
-    float *vertex = _currentBindState.GetOffsettedVertexBuffer();
-    float *varying = _currentBindState.GetOffsettedVaryingBuffer();
+    CUdeviceptr vertex = _currentBindState.GetOffsettedVertexBuffer();
+    CUdeviceptr varying = _currentBindState.GetOffsettedVaryingBuffer();
+    CUdeviceptr V_ITa_mem = V_ITa->GetCudaMemory();
+    CUdeviceptr V_W_mem = V_W->GetCudaMemory();
+    int vertex_offset = batch.GetVertexOffset();
+    int table_offset = batch.GetTableOffset();
+    int start = batch.GetStart();
+    int end = batch.GetEnd();
+    int pass = 0;
 
-    OsdCudaComputeVertexA(
-        vertex, varying,
-        _currentBindState.vertexDesc.length, _currentBindState.vertexDesc.stride,
-        _currentBindState.varyingDesc.length, _currentBindState.varyingDesc.stride,
-        static_cast<int*>(V_ITa->GetCudaMemory()),
-        static_cast<float*>(V_W->GetCudaMemory()),
-        batch.GetVertexOffset(), batch.GetTableOffset(), batch.GetStart(), batch.GetEnd(), false);
+    cuda_run_kernel(OsdCudaComputeVertexA,
+                    &vertex, &varying,
+                    (void *)&_currentBindState.vertexDesc.length,
+                    (void *)&_currentBindState.vertexDesc.stride,
+                    (void *)&_currentBindState.varyingDesc.length,
+                    (void *)&_currentBindState.varyingDesc.stride,
+                    &V_ITa_mem,
+                    &V_W_mem,
+                    &vertex_offset,
+                    &table_offset,
+                    &start, &end, &pass);
 }
 
 void
@@ -254,16 +321,27 @@ OsdCudaComputeController::ApplyCatmarkVertexVerticesKernelA2(
     assert(V_ITa);
     assert(V_W);
 
-    float *vertex = _currentBindState.GetOffsettedVertexBuffer();
-    float *varying = _currentBindState.GetOffsettedVaryingBuffer();
+    CUdeviceptr vertex = _currentBindState.GetOffsettedVertexBuffer();
+    CUdeviceptr varying = _currentBindState.GetOffsettedVaryingBuffer();
+    CUdeviceptr V_ITa_mem = V_ITa->GetCudaMemory();
+    CUdeviceptr V_W_mem = V_W->GetCudaMemory();
+    int vertex_offset = batch.GetVertexOffset();
+    int table_offset = batch.GetTableOffset();
+    int start = batch.GetStart();
+    int end = batch.GetEnd();
+    int pass = 1;
 
-    OsdCudaComputeVertexA(
-        vertex, varying,
-        _currentBindState.vertexDesc.length, _currentBindState.vertexDesc.stride,
-        _currentBindState.varyingDesc.length, _currentBindState.varyingDesc.stride,
-        static_cast<int*>(V_ITa->GetCudaMemory()),
-        static_cast<float*>(V_W->GetCudaMemory()),
-        batch.GetVertexOffset(), batch.GetTableOffset(), batch.GetStart(), batch.GetEnd(), true);
+    cuda_run_kernel(OsdCudaComputeVertexA,
+                    &vertex, &varying,
+                    (void *)&_currentBindState.vertexDesc.length,
+                    (void *)&_currentBindState.vertexDesc.stride,
+                    (void *)&_currentBindState.varyingDesc.length,
+                    (void *)&_currentBindState.varyingDesc.stride,
+                    &V_ITa_mem,
+                    &V_W_mem,
+                    &vertex_offset,
+                    &table_offset,
+                    &start, &end, &pass);
 }
 
 void
@@ -277,16 +355,27 @@ OsdCudaComputeController::ApplyLoopEdgeVerticesKernel(
     assert(E_IT);
     assert(E_W);
 
-    float *vertex = _currentBindState.GetOffsettedVertexBuffer();
-    float *varying = _currentBindState.GetOffsettedVaryingBuffer();
+    CUdeviceptr vertex = _currentBindState.GetOffsettedVertexBuffer();
+    CUdeviceptr varying = _currentBindState.GetOffsettedVaryingBuffer();
+    CUdeviceptr E_IT_mem = E_IT->GetCudaMemory();
+    CUdeviceptr E_W_mem = E_W->GetCudaMemory();
+    int vertex_offset = batch.GetVertexOffset();
+    int table_offset = batch.GetTableOffset();
+    int start = batch.GetStart();
+    int end = batch.GetEnd();
+    int pass = 1;
 
-    OsdCudaComputeEdge(
-        vertex, varying,
-        _currentBindState.vertexDesc.length, _currentBindState.vertexDesc.stride,
-        _currentBindState.varyingDesc.length, _currentBindState.varyingDesc.stride,
-        static_cast<int*>(E_IT->GetCudaMemory()),
-        static_cast<float*>(E_W->GetCudaMemory()),
-        batch.GetVertexOffset(), batch.GetTableOffset(), batch.GetStart(), batch.GetEnd());
+    cuda_run_kernel(OsdCudaComputeVertexA,
+                    &vertex, &varying,
+                    (void *)&_currentBindState.vertexDesc.length,
+                    (void *)&_currentBindState.vertexDesc.stride,
+                    (void *)&_currentBindState.varyingDesc.length,
+                    (void *)&_currentBindState.varyingDesc.stride,
+                    &E_IT_mem,
+                    &E_W_mem,
+                    &vertex_offset,
+                    &table_offset,
+                    &start, &end, &pass);
 }
 
 void
@@ -302,17 +391,28 @@ OsdCudaComputeController::ApplyLoopVertexVerticesKernelB(
     assert(V_IT);
     assert(V_W);
 
-    float *vertex = _currentBindState.GetOffsettedVertexBuffer();
-    float *varying = _currentBindState.GetOffsettedVaryingBuffer();
+    CUdeviceptr vertex = _currentBindState.GetOffsettedVertexBuffer();
+    CUdeviceptr varying = _currentBindState.GetOffsettedVaryingBuffer();
+    CUdeviceptr V_ITa_mem = V_ITa->GetCudaMemory();
+    CUdeviceptr V_IT_mem = V_IT->GetCudaMemory();
+    CUdeviceptr V_W_mem =V_W->GetCudaMemory();
+    int vertex_offset = batch.GetVertexOffset();
+    int table_offset = batch.GetTableOffset();
+    int start = batch.GetStart();
+    int end = batch.GetEnd();
 
-    OsdCudaComputeLoopVertexB(
-        vertex, varying,
-        _currentBindState.vertexDesc.length, _currentBindState.vertexDesc.stride,
-        _currentBindState.varyingDesc.length, _currentBindState.varyingDesc.stride,
-        static_cast<int*>(V_ITa->GetCudaMemory()),
-        static_cast<int*>(V_IT->GetCudaMemory()),
-        static_cast<float*>(V_W->GetCudaMemory()),
-        batch.GetVertexOffset(), batch.GetTableOffset(), batch.GetStart(), batch.GetEnd());
+    cuda_run_kernel(OsdCudaComputeLoopVertexB,
+                    &vertex, &varying,
+                    (void *)&_currentBindState.vertexDesc.length,
+                    (void *)&_currentBindState.vertexDesc.stride,
+                    (void *)&_currentBindState.varyingDesc.length,
+                    (void *)&_currentBindState.varyingDesc.stride,
+                    &V_ITa_mem,
+                    &V_IT_mem,
+                    &V_W_mem,
+                    &vertex_offset,
+                    &table_offset,
+                    &start, &end);
 }
 
 void
@@ -326,16 +426,27 @@ OsdCudaComputeController::ApplyLoopVertexVerticesKernelA1(
     assert(V_ITa);
     assert(V_W);
 
-    float *vertex = _currentBindState.GetOffsettedVertexBuffer();
-    float *varying = _currentBindState.GetOffsettedVaryingBuffer();
+    CUdeviceptr vertex = _currentBindState.GetOffsettedVertexBuffer();
+    CUdeviceptr varying = _currentBindState.GetOffsettedVaryingBuffer();
+    CUdeviceptr V_ITa_mem = V_ITa->GetCudaMemory();
+    CUdeviceptr V_W_mem = V_W->GetCudaMemory();
+    int vertex_offset = batch.GetVertexOffset();
+    int table_offset = batch.GetTableOffset();
+    int start = batch.GetStart();
+    int end = batch.GetEnd();
+    int pass = 0;
 
-    OsdCudaComputeVertexA(
-        vertex, varying,
-        _currentBindState.vertexDesc.length, _currentBindState.vertexDesc.stride,
-        _currentBindState.varyingDesc.length, _currentBindState.varyingDesc.stride,
-        static_cast<int*>(V_ITa->GetCudaMemory()),
-        static_cast<float*>(V_W->GetCudaMemory()),
-        batch.GetVertexOffset(), batch.GetTableOffset(), batch.GetStart(), batch.GetEnd(), false);
+    cuda_run_kernel(OsdCudaComputeVertexA,
+                    &vertex, &varying,
+                    (void *)&_currentBindState.vertexDesc.length,
+                    (void *)&_currentBindState.vertexDesc.stride,
+                    (void *)&_currentBindState.varyingDesc.length,
+                    (void *)&_currentBindState.varyingDesc.stride,
+                    &V_ITa_mem,
+                    &V_W_mem,
+                    &vertex_offset,
+                    &table_offset,
+                    &start, &end, &pass);
 }
 
 void
@@ -349,16 +460,27 @@ OsdCudaComputeController::ApplyLoopVertexVerticesKernelA2(
     assert(V_ITa);
     assert(V_W);
 
-    float *vertex = _currentBindState.GetOffsettedVertexBuffer();
-    float *varying = _currentBindState.GetOffsettedVaryingBuffer();
+    CUdeviceptr vertex = _currentBindState.GetOffsettedVertexBuffer();
+    CUdeviceptr varying = _currentBindState.GetOffsettedVaryingBuffer();
+    CUdeviceptr V_ITa_mem = V_ITa->GetCudaMemory();
+    CUdeviceptr V_W_mem = V_W->GetCudaMemory();
+    int vertex_offset = batch.GetVertexOffset();
+    int table_offset = batch.GetTableOffset();
+    int start = batch.GetStart();
+    int end = batch.GetEnd();
+    int pass = 1;
 
-    OsdCudaComputeVertexA(
-        vertex, varying,
-        _currentBindState.vertexDesc.length, _currentBindState.vertexDesc.stride,
-        _currentBindState.varyingDesc.length, _currentBindState.varyingDesc.stride,
-        static_cast<int*>(V_ITa->GetCudaMemory()),
-        static_cast<float*>(V_W->GetCudaMemory()),
-        batch.GetVertexOffset(), batch.GetTableOffset(), batch.GetStart(), batch.GetEnd(), true);
+    cuda_run_kernel(OsdCudaComputeVertexA,
+                    &vertex, &varying,
+                    (void *)&_currentBindState.vertexDesc.length,
+                    (void *)&_currentBindState.vertexDesc.stride,
+                    (void *)&_currentBindState.varyingDesc.length,
+                    (void *)&_currentBindState.varyingDesc.stride,
+                    &V_ITa_mem,
+                    &V_W_mem,
+                    &vertex_offset,
+                    &table_offset,
+                    &start, &end, &pass);
 }
 
 void
@@ -373,20 +495,29 @@ OsdCudaComputeController::ApplyVertexEdits(
     const OsdCudaTable * primvarIndices = edit->GetPrimvarIndices();
     const OsdCudaTable * editValues = edit->GetEditValues();
 
-    float *vertex = _currentBindState.GetOffsettedVertexBuffer();
+    CUdeviceptr vertex = _currentBindState.GetOffsettedVertexBuffer();
 
     if (edit->GetOperation() == FarVertexEdit::Add) {
-        OsdCudaEditVertexAdd(
-            vertex,
-            _currentBindState.vertexDesc.length, _currentBindState.vertexDesc.stride,
-            edit->GetPrimvarOffset(),
-            edit->GetPrimvarWidth(),
-            batch.GetVertexOffset(),
-            batch.GetTableOffset(),
-            batch.GetStart(),
-            batch.GetEnd(),
-            static_cast<int*>(primvarIndices->GetCudaMemory()),
-            static_cast<float*>(editValues->GetCudaMemory()));
+        CUdeviceptr edit_primvar_offset = edit->GetPrimvarOffset();
+        CUdeviceptr edit_primvar_width = edit->GetPrimvarWidth();
+        CUdeviceptr primvar_indices_mem = primvarIndices->GetCudaMemory();
+        CUdeviceptr edit_values_mem = editValues->GetCudaMemory();
+        int vertex_offset = batch.GetVertexOffset();
+        int table_offset = batch.GetTableOffset();
+        int start = batch.GetStart();
+        int end = batch.GetEnd();
+
+        cuda_run_kernel(OsdCudaComputeVertexA,
+                        &vertex,
+                        (void *)&_currentBindState.vertexDesc.length,
+                        (void *)&_currentBindState.vertexDesc.stride,
+                        &edit_primvar_offset,
+                        &edit_primvar_width,
+                        &vertex_offset,
+                        &table_offset,
+                        &start, &end,
+                        &primvar_indices_mem,
+                        &edit_values_mem);
     } else if (edit->GetOperation() == FarVertexEdit::Set) {
         // XXXX TODO
     }
@@ -395,7 +526,7 @@ OsdCudaComputeController::ApplyVertexEdits(
 void
 OsdCudaComputeController::Synchronize() {
 
-    cudaThreadSynchronize();
+    cuCtxSynchronize();
 }
 
 } // end namespace OPENSUBDIV_VERSION

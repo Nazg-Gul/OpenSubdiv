@@ -54,12 +54,10 @@ OpenSubdiv::OsdCpuComputeController * g_cpuComputeController = NULL;
 #endif
 
 #ifdef OPENSUBDIV_HAS_CUDA
+    #include <osd/cuda.h>
     #include <osd/cudaD3D11VertexBuffer.h>
     #include <osd/cudaComputeContext.h>
     #include <osd/cudaComputeController.h>
-
-    #include <cuda_runtime_api.h>
-    #include <cuda_d3d11_interop.h>
 
     bool g_cudaInitialized = false;
     OpenSubdiv::OsdCudaComputeController * g_cudaComputeController = NULL;
@@ -1028,7 +1026,6 @@ quit() {
 
 #ifdef OPENSUBDIV_HAS_CUDA
     delete g_cudaComputeController;
-    cudaDeviceReset();
 #endif
 
     delete g_d3d11ComputeController;
@@ -1165,7 +1162,9 @@ initHUD()
     g_hud->AddRadioButton(0, "OPENMP", false, 10, 30, callbackKernel, kOPENMP, 'K');
 #endif
 #ifdef OPENSUBDIV_HAS_CUDA
-    g_hud->AddRadioButton(0, "CUDA",   false, 10, 50, callbackKernel, kCUDA, 'K');
+    if (HAS_CUDA_VERSION_4_0()) {
+        g_hud->AddRadioButton(0, "CUDA",   false, 10, 50, callbackKernel, kCUDA, 'K');
+    }
 #endif
 #ifdef OPENSUBDIV_HAS_OPENCL
     if (HAS_CL_VERSION_1_1()) {

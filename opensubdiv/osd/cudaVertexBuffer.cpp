@@ -23,8 +23,8 @@
 //
 
 #include "../osd/cudaVertexBuffer.h"
+#include "../osd/cuda.h"
 
-#include <cuda_runtime.h>
 #include <cassert>
 
 namespace OpenSubdiv {
@@ -37,7 +37,7 @@ OsdCudaVertexBuffer::OsdCudaVertexBuffer(int numElements, int numVertices)
 }
 
 OsdCudaVertexBuffer::~OsdCudaVertexBuffer() {
-    if (_cudaMem) cudaFree(_cudaMem);
+    if (_cudaMem) cuMemFree(_cudaMem);
 }
 
 OsdCudaVertexBuffer *
@@ -54,8 +54,8 @@ OsdCudaVertexBuffer::UpdateData(const float *src, int startVertex, int numVertic
 
     size_t size = _numElements * numVertices * sizeof(float);
 
-    cudaMemcpy((float*)_cudaMem + _numElements * startVertex,
-               src, size, cudaMemcpyHostToDevice);
+    cuMemcpyHtoD(_cudaMem + _numElements * startVertex * sizeof(float),
+                 src, size);
 }
 
 int
@@ -70,19 +70,18 @@ OsdCudaVertexBuffer::GetNumVertices() const {
     return _numVertices;
 }
 
-float *
+CUdeviceptr
 OsdCudaVertexBuffer::BindCudaBuffer() {
-
-    return static_cast<float*>(_cudaMem);
+    return _cudaMem;
 }
 
 bool
 OsdCudaVertexBuffer::allocate() {
     int size = _numElements * _numVertices * sizeof(float);
 
-    cudaError_t err = cudaMalloc(&_cudaMem, size);
+    CUresult err = cuMemAlloc(&_cudaMem, size);
 
-    if (err != cudaSuccess) return false;
+    if (err != CUDA_SUCCESS) return false;
     return true;
 }
 

@@ -46,6 +46,10 @@ if ( GLEW_FOUND )
     list(APPEND PLATFORM_LIBRARIES "${GLEW_LIBRARY}")
 endif()
 
+if( CUDA_FOUND )
+    include_directories("${CUDA_INCLUDE_DIRS}")
+endif()
+
 if( OPENCL_FOUND )
     include_directories("${OPENCL_INCLUDE_DIRS}")
 endif()

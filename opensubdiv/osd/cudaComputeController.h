@@ -49,10 +49,13 @@ public:
     typedef OsdCudaComputeContext ComputeContext;
 
     /// Constructor.
-    OsdCudaComputeController();
+    OsdCudaComputeController(int device_idx = 0);
 
     /// Destructor.
     ~OsdCudaComputeController();
+
+    /// Set compute device index.
+    void OsdCudaComputeDevince(int device_idx);
 
     /// Launch subdivision kernels and apply to given vertex buffers.
     ///
@@ -162,10 +165,8 @@ protected:
                 0, numElements, numElements);
         }
 
-        _currentBindState.vertexBuffer = vertex ?
-            static_cast<float*>(vertex->BindCudaBuffer()) : 0;
-        _currentBindState.varyingBuffer = varying ?
-            static_cast<float*>(varying->BindCudaBuffer()) : 0;
+        _currentBindState.vertexBuffer = vertex ? vertex->BindCudaBuffer() : 0;
+        _currentBindState.varyingBuffer = varying ? varying->BindCudaBuffer() : 0;
     }
 
     /// Unbinds any previously bound vertex and varying data buffers.
@@ -174,22 +175,25 @@ protected:
     }
 
 private:
+    CUcontext _context;
+    CUmodule _module;
+
     struct BindState {
-        BindState() : vertexBuffer(NULL), varyingBuffer(NULL) {}
+        BindState() : vertexBuffer(0), varyingBuffer(0) {}
         void Reset() {
-            vertexBuffer = varyingBuffer = NULL;
+            vertexBuffer = varyingBuffer = 0;
             vertexDesc.Reset();
             varyingDesc.Reset();
         }
-        float *GetOffsettedVertexBuffer() const {
+        CUdeviceptr GetOffsettedVertexBuffer() const {
             return vertexBuffer ? vertexBuffer + vertexDesc.offset : 0;
         }
-        float *GetOffsettedVaryingBuffer() const {
+        CUdeviceptr GetOffsettedVaryingBuffer() const {
             return varyingBuffer ? varyingBuffer + varyingDesc.offset : 0;
         }
 
-        float *vertexBuffer; // cuda buffers
-        float *varyingBuffer;
+        CUdeviceptr vertexBuffer; // cuda buffers
+        CUdeviceptr varyingBuffer;
         OsdVertexBufferDescriptor vertexDesc;
         OsdVertexBufferDescriptor varyingDesc;
     };

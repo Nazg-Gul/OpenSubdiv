@@ -23,8 +23,7 @@
 //
 
 #include "../osd/cudaComputeContext.h"
-
-#include <cuda_runtime.h>
+#include "../osd/cuda.h"
 
 namespace OpenSubdiv {
 namespace OPENSUBDIV_VERSION {
@@ -32,15 +31,15 @@ namespace OPENSUBDIV_VERSION {
 bool
 OsdCudaTable::createCudaBuffer(size_t size, const void *ptr) {
 
-    cudaError_t err = cudaMalloc(&_devicePtr, size);
-    if (err != cudaSuccess) {
+    CUresult err = cuMemAlloc(&_devicePtr, size);
+    if (err != CUDA_SUCCESS) {
         return false;
     }
 
-    err = cudaMemcpy(_devicePtr, ptr, size, cudaMemcpyHostToDevice);
-    if (err != cudaSuccess) {
-        cudaFree(_devicePtr);
-        _devicePtr = NULL;
+    err = cuMemcpyHtoD(_devicePtr, ptr, size);
+    if (err != CUDA_SUCCESS) {
+        cuMemFree(_devicePtr);
+        _devicePtr = 0;
         return false;
     }
     return true;
@@ -48,12 +47,11 @@ OsdCudaTable::createCudaBuffer(size_t size, const void *ptr) {
 
 OsdCudaTable::~OsdCudaTable() {
 
-    if (_devicePtr) cudaFree(_devicePtr);
+    if (_devicePtr) cuMemFree(_devicePtr);
 }
 
-void *
+CUdeviceptr
 OsdCudaTable::GetCudaMemory() const {
-
     return _devicePtr;
 }
 
