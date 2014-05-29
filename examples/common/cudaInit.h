@@ -27,27 +27,7 @@
 
 #include <algorithm>
 #include <cstdio>
-#include "osd/cuda.h"
-
-static bool HAS_CUDA_VERSION_4_0 () {
-#ifdef OPENSUBDIV_HAS_CUDA
-     #ifdef OPENSUBDIV_HAS_CUEW
-        static bool cuewInitialized = false;
-        static bool cuewLoadSuccess;
-        if (not cuewInitialized) {
-            cuewInitialized = true;
-            cuewLoadSuccess = cuewInit() != 0;
-            if (not cuewLoadSuccess) {
-                fprintf(stderr, "Loading CUDA failed.\n");
-            }
-        }
-        return cuewLoadSuccess;
-    #endif
-    return true;
-#else
-    return false;
-#endif
-}
+#include <opensubdiv/osd/cuda.h>
 
 // From "NVIDIA GPU Computing SDK 4.2/C/common/inc/cutil_inline_runtime.h":
 
@@ -87,7 +67,7 @@ inline int _ConvertSMVer2Cores_local(int major, int minor)
 inline int cutGetMaxGflopsDeviceId()
 {
     int current_device   = 0, sm_per_multiproc = 0;
-    int max_compute_perf = 0, max_perf_device  = 0;
+    int max_compute_perf = 0, max_perf_device  = -1;
     int device_count     = 0, best_SM_arch     = 0;
     int compat_major, compat_minor;
 
@@ -135,6 +115,33 @@ inline int cutGetMaxGflopsDeviceId()
         ++current_device;
     }
     return max_perf_device;
+}
+
+static bool HAS_CUDA_VERSION_4_0 () {
+#ifdef OPENSUBDIV_HAS_CUDA
+    static bool cudaInitialized = false;
+    static bool cudaLoadSuccess = true;
+    if (not cudaInitialized) {
+        cudaInitialized = true;
+
+#    ifdef OPENSUBDIV_HAS_CUEW
+        cudaLoadSuccess = cuewInit() != 0;
+        if (not cudaLoadSuccess) {
+            fprintf(stderr, "Loading CUDA failed.\n");
+        }
+#    endif
+
+        // This is to deal with cases like NVidia Optimus,
+        // when there might be CUDA library installed but
+        // NVidia card is not being active.
+        if (cutGetMaxGflopsDeviceId() < 0) {
+            cudaLoadSuccess = false;
+        }
+    }
+    return cudaLoadSuccess;
+#else
+    return false;
+#endif
 }
 
 #endif //OSD_CUDA_INIT_H
