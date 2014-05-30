@@ -34,16 +34,6 @@ extern unsigned char datatoc_cudaKernel_fatbin[];
 namespace OpenSubdiv {
 namespace OPENSUBDIV_VERSION {
 
-#define cuda_assert(statement) { \
-        CUresult result = statement; \
-        if (result != CUDA_SUCCESS) { \
-            fprintf(stderr, "CUDA error %s in %s\n", \
-                    cuda_GetErrorString(result), \
-                    #statement); \
-            abort(); \
-        } \
-    }
-
 OsdCudaComputeController::OsdCudaComputeController(int device_idx) {
     cuInit(0);
 
@@ -68,18 +58,6 @@ void OsdCudaComputeController::OsdCudaComputeDevince(int device_idx) {
     cuda_assert(cuDeviceGet(&device, device_idx));
     cuda_assert(cuCtxCreate(&_context, 0, device));
 }
-
-#define cuda_run_kernel(function_name, args ...) { \
-        CUfunction function; \
-        cuda_assert(cuModuleGetFunction(&function, _module, #function_name)); \
-        void *kernel_params[] = { args }; \
-        cuLaunchKernel(function, \
-                       512, 1, 1, \
-                       32, 1, 1, \
-                       0, \
-                       NULL, kernel_params, NULL); \
-    } (void) 0
-
 
 void
 OsdCudaComputeController::ApplyBilinearFaceVerticesKernel(

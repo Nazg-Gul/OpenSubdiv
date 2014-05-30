@@ -49,7 +49,7 @@ int main(int argc, char **argv) {
     }
 
     std::ifstream input;
-    input.open(argv[1]);
+    input.open(argv[1], std::ifstream::binary);
     if (not input.is_open()) {
         std::cerr << "Can not read from: " << argv[1] << std::endl;
         return 1;

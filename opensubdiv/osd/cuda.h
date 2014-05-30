@@ -100,4 +100,38 @@ static inline const char *cuda_GetErrorString(CUresult result) {
    }
 }
 
+#define cuda_assert(statement) { \
+    CUresult result = statement; \
+    if (result != CUDA_SUCCESS) { \
+        fprintf(stderr, "CUDA error %s in %s\n", \
+        cuda_GetErrorString(result), #statement); \
+        abort(); \
+    } \
+}
+
+// TODO(sergey): Make grid/block dimensions configurable
+#if defined __GNUC__ || defined __sun
+#    define cuda_run_kernel(function_name, args ...) { \
+	CUfunction function; \
+	cuda_assert(cuModuleGetFunction(&function, _module, #function_name)); \
+	void *kernel_params[] = { args }; \
+	cuLaunchKernel(function, \
+	512, 1, 1, \
+	32, 1, 1, \
+	0, \
+	NULL, kernel_params, NULL); \
+} (void)0
+#else
+#    define cuda_run_kernel(function_name, ...) { \
+	CUfunction function; \
+	cuda_assert(cuModuleGetFunction(&function, _module, #function_name)); \
+	void *kernel_params[] = { __VA_ARGS__ }; \
+	cuLaunchKernel(function, \
+	512, 1, 1, \
+	32, 1, 1, \
+	0, \
+	NULL, kernel_params, NULL); \
+} (void)0
+#endif
+
 #endif  // OSD_CUDA_H

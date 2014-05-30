@@ -22,7 +22,13 @@
 //   language governing permissions and limitations under the Apache License.
 //
 
+#define _USE_MATH_DEFINES
 #include <assert.h>
+#include <math.h>
+
+#ifdef _WIN32
+#  include <iso646.h>
+#endif
 
 template<int N> struct DeviceVertex
 {

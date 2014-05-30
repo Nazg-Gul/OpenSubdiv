@@ -286,7 +286,7 @@ option(NO_CUDA "Disable CUDA backend" OFF)
 option(NO_CUEW "Disable CUEW wrapper library" OFF)
 option(NO_OPENCL "Disable OpenCL backend" OFF)
 option(NO_CLEW "Disable CLEW wrapper library" OFF)
-option(NO_NO_GCD "Disable GrandCentralDispatch backend" OFF)
+option(NO_GCD "Disable GrandCentralDispatch backend" OFF)
 
 # Check for dependencies
 if(NOT NO_OMP)
@@ -522,6 +522,16 @@ if (WIN32)
     # Link examples & regressions statically against Osd for
     # Windows until all the kinks can be worked out.
     set( OSD_LINK_TARGET osd_static_cpu osd_static_gpu )
+
+    # Static libraries are not linked against CLEW/CUEW yet, so
+    # need to pass them to the linker as well.
+    if(CLEW_FOUND)
+        list(APPEND OSD_LINK_TARGET "${CLEW_LIBRARY}")
+    endif()
+
+    if(CUEW_FOUND)
+        list(APPEND OSD_LINK_TARGET "${CUEW_LIBRARY}")
+    endif()
 
     if (DXSDK_FOUND)
         add_definitions(
