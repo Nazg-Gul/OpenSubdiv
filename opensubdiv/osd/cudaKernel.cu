@@ -22,6 +22,9 @@
 //   language governing permissions and limitations under the Apache License.
 //
 
+// TODO(sergey): Consider passing _USE_MATH_DEFINES and alternate logic
+// operations via compiler flags, same as done for regular C++ sources.
+
 #define _USE_MATH_DEFINES
 #include <assert.h>
 #include <math.h>
