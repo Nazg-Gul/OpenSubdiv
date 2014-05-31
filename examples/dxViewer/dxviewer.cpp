@@ -59,7 +59,8 @@ OpenSubdiv::OsdCpuComputeController * g_cpuComputeController = NULL;
     #include <osd/cudaComputeContext.h>
     #include <osd/cudaComputeController.h>
 
-    bool g_cudaInitialized = false;
+    #include "../common/cudaInit.h"
+
     OpenSubdiv::OsdCudaComputeController * g_cudaComputeController = NULL;
 #endif
 
@@ -1068,12 +1069,6 @@ callbackKernel(int k)
             printf("Error in initializing OpenCL\n");
             exit(1);
         }
-    }
-#endif
-#ifdef OPENSUBDIV_HAS_CUDA
-    if (g_kernel == kCUDA and g_cudaInitialized == false) {
-        g_cudaInitialized = true;
-        cudaD3D11SetDirect3DDevice( g_pd3dDevice );
     }
 #endif
 

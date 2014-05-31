@@ -43,6 +43,19 @@ set(SOURCE_FILES
     dxViewer.cpp
 )
 
+if ( GLEW_FOUND )
+    include_directories("${GLEW_INCLUDE_DIR}")
+    list(APPEND PLATFORM_LIBRARIES "${GLEW_LIBRARY}")
+endif()
+
+if( CUDA_FOUND )
+    include_directories("${CUDA_INCLUDE_DIRS}")
+endif()
+
+if( OPENCL_FOUND )
+    include_directories("${OPENCL_INCLUDE_DIRS}")
+endif()
+
 _stringify("${SHADER_FILES}" INC_FILES)
 
 include_directories("${CMAKE_CURRENT_BINARY_DIR}")

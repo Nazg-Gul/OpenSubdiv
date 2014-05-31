@@ -26,6 +26,7 @@
 #define OSD_CUDA_D3D11_VERTEX_BUFFER_H
 
 #include "../version.h"
+#include "../osd/cuda.h"
 
 struct cudaGraphicsResource;
 
@@ -66,7 +67,7 @@ public:
 
     /// Returns cuda memory. DX buffer will be mapped to cuda resource
     /// if necessary.
-    float * BindCudaBuffer();
+    CUdeviceptr BindCudaBuffer();
 
     /// Returns the D3D11 buffer object.
     ID3D11Buffer *BindD3D11Buffer(ID3D11DeviceContext *deviceContext);
@@ -89,8 +90,8 @@ private:
     int _numElements;
     int _numVertices;
     ID3D11Buffer *_d3d11Buffer;
-    void *_cudaBuffer;
-    cudaGraphicsResource *_cudaResource;
+    CUdeviceptr _cudaBuffer;
+    CUgraphicsResource _cudaResource;
 };
 
 }  // end namespace OPENSUBDIV_VERSION

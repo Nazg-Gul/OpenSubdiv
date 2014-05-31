@@ -27,7 +27,6 @@
 #include "../osd/error.h"
 
 #include <D3D11.h>
-#include <cuda_d3d11_interop.h>
 #include <cassert>
 
 namespace OpenSubdiv {
@@ -43,7 +42,7 @@ OsdCudaD3D11VertexBuffer::OsdCudaD3D11VertexBuffer(int numElements,
 OsdCudaD3D11VertexBuffer::~OsdCudaD3D11VertexBuffer() {
 
     unmap();
-    cudaGraphicsUnregisterResource(_cudaResource);
+    cuGraphicsUnregisterResource(_cudaResource);
     _d3d11Buffer->Release();
 }
 
@@ -62,7 +61,7 @@ OsdCudaD3D11VertexBuffer::UpdateData(const float *src, int startVertex, int numV
 
     map();
     cuMemcpyHtoD(_cudaBuffer + _numElements * startVertex * sizeof(float),
-                 src, _numElements * numVertices * sizeof(float))
+                 src, _numElements * numVertices * sizeof(float));
 }
 
 int
@@ -77,11 +76,11 @@ OsdCudaD3D11VertexBuffer::GetNumVertices() const {
     return _numVertices;
 }
 
-float *
+CUdeviceptr
 OsdCudaD3D11VertexBuffer::BindCudaBuffer() {
 
     map();
-    return (float*)_cudaBuffer;
+    return _cudaBuffer;
 }
 
 ID3D11Buffer *
@@ -111,10 +110,10 @@ OsdCudaD3D11VertexBuffer::allocate(ID3D11Device *device) {
     }
     
     // register d3d11buffer as cuda resource
-    cudaError_t err = cudaGraphicsD3D11RegisterResource(
-        &_cudaResource, _d3d11Buffer, cudaGraphicsRegisterFlagsNone);
+    CUresult err = cuGraphicsD3D11RegisterResource(
+        &_cudaResource, _d3d11Buffer, CU_GRAPHICS_REGISTER_FLAGS_NONE);
 
-    if (err != cudaSuccess) return false;
+    if (err != CUDA_SUCCESS) return false;
     return true;
 }
 
@@ -123,19 +122,19 @@ OsdCudaD3D11VertexBuffer::map() {
 
     if (_cudaBuffer) return;
     size_t num_bytes;
-    void *ptr;
+    CUdeviceptr ptr;
     
-    cudaGraphicsMapResources(1, &_cudaResource, 0);
-    cudaGraphicsResourceGetMappedPointer(&ptr, &num_bytes, _cudaResource);
+    cuGraphicsMapResources(1, &_cudaResource, 0);
+    cuGraphicsResourceGetMappedPointer(&ptr, &num_bytes, _cudaResource);
     _cudaBuffer = ptr;
 }
 
 void
 OsdCudaD3D11VertexBuffer::unmap() {
     
-    if (_cudaBuffer == NULL) return;
-    cudaGraphicsUnmapResources(1, &_cudaResource, 0);
-    _cudaBuffer = NULL;
+    if (_cudaBuffer == 0) return;
+    cuGraphicsUnmapResources(1, &_cudaResource, 0);
+    _cudaBuffer = 0;
 }
 
 
