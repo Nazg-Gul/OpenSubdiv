@@ -41,8 +41,6 @@
 #else
     #if defined(_WIN32)
         #define W32_LEAN_AND_MEAN
-        // To avoid macro definition of min/max.
-        #define NOMINMAX
         #include <windows.h>
     #endif
     #if defined(OSD_USES_GLEW)
