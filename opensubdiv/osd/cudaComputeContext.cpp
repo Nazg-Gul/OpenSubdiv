@@ -31,6 +31,11 @@ namespace OPENSUBDIV_VERSION {
 bool
 OsdCudaTable::createCudaBuffer(size_t size, const void *ptr) {
 
+    if (size == 0) {
+        _devicePtr = 0;
+        return true;
+    }
+
     CUresult err = cuMemAlloc(&_devicePtr, size);
     if (err != CUDA_SUCCESS) {
         return false;

@@ -163,7 +163,41 @@ OsdD3D11ComputeController::ApplyCatmarkFaceVerticesKernel(
         _currentBindState.vertexDesc.offset, _currentBindState.varyingDesc.offset);
 }
 
+void
+OsdD3D11ComputeController::ApplyCatmarkQuadFaceVerticesKernel(
+    FarKernelBatch const &batch, OsdD3D11ComputeContext const *context) const {
 
+    assert(context);
+
+    _currentBindState.kernelBundle->ApplyCatmarkQuadFaceVerticesKernel(
+        batch.GetVertexOffset(), batch.GetTableOffset(),
+        batch.GetStart(), batch.GetEnd(),
+        _currentBindState.vertexDesc.offset, _currentBindState.varyingDesc.offset);
+}
+
+void
+OsdD3D11ComputeController::ApplyCatmarkTriQuadFaceVerticesKernel(
+    FarKernelBatch const &batch, OsdD3D11ComputeContext const *context) const {
+
+    assert(context);
+
+    _currentBindState.kernelBundle->ApplyCatmarkTriQuadFaceVerticesKernel(
+        batch.GetVertexOffset(), batch.GetTableOffset(),
+        batch.GetStart(), batch.GetEnd(),
+        _currentBindState.vertexDesc.offset, _currentBindState.varyingDesc.offset);
+}
+
+void
+OsdD3D11ComputeController::ApplyCatmarkRestrictedEdgeVerticesKernel(
+    FarKernelBatch const &batch, OsdD3D11ComputeContext const *context) const {
+
+    assert(context);
+
+    _currentBindState.kernelBundle->ApplyCatmarkRestrictedEdgeVerticesKernel(
+        batch.GetVertexOffset(), batch.GetTableOffset(),
+        batch.GetStart(), batch.GetEnd(),
+        _currentBindState.vertexDesc.offset, _currentBindState.varyingDesc.offset);
+}
 
 void
 OsdD3D11ComputeController::ApplyCatmarkEdgeVerticesKernel(
@@ -210,6 +244,42 @@ OsdD3D11ComputeController::ApplyCatmarkVertexVerticesKernelA2(
     _currentBindState.kernelBundle->ApplyCatmarkVertexVerticesKernelA(
         batch.GetVertexOffset(), batch.GetTableOffset(),
         batch.GetStart(), batch.GetEnd(), true,
+        _currentBindState.vertexDesc.offset, _currentBindState.varyingDesc.offset);
+}
+
+void
+OsdD3D11ComputeController::ApplyCatmarkRestrictedVertexVerticesKernelB1(
+    FarKernelBatch const &batch, OsdD3D11ComputeContext const *context) const {
+
+    assert(context);
+
+    _currentBindState.kernelBundle->ApplyCatmarkRestrictedVertexVerticesKernelB1(
+        batch.GetVertexOffset(), batch.GetTableOffset(),
+        batch.GetStart(), batch.GetEnd(),
+        _currentBindState.vertexDesc.offset, _currentBindState.varyingDesc.offset);
+}
+
+void
+OsdD3D11ComputeController::ApplyCatmarkRestrictedVertexVerticesKernelB2(
+    FarKernelBatch const &batch, OsdD3D11ComputeContext const *context) const {
+
+    assert(context);
+
+    _currentBindState.kernelBundle->ApplyCatmarkRestrictedVertexVerticesKernelB2(
+        batch.GetVertexOffset(), batch.GetTableOffset(),
+        batch.GetStart(), batch.GetEnd(),
+        _currentBindState.vertexDesc.offset, _currentBindState.varyingDesc.offset);
+}
+
+void
+OsdD3D11ComputeController::ApplyCatmarkRestrictedVertexVerticesKernelA(
+    FarKernelBatch const &batch, OsdD3D11ComputeContext const *context) const {
+
+    assert(context);
+
+    _currentBindState.kernelBundle->ApplyCatmarkRestrictedVertexVerticesKernelA(
+        batch.GetVertexOffset(), batch.GetTableOffset(),
+        batch.GetStart(), batch.GetEnd(),
         _currentBindState.vertexDesc.offset, _currentBindState.varyingDesc.offset);
 }
 

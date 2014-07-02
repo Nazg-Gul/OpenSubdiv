@@ -186,6 +186,57 @@ void catmarkComputeFace()
     writeVertex(dst);
 }
 
+// Quad face-vertices compute Kernel
+subroutine(computeKernelType)
+void catmarkComputeQuadFace()
+{
+    int i = gl_VertexID + indexStart;
+    int fidx0 = texelFetch(_F0_IT, tableOffset + 4 * i + 0).x;
+    int fidx1 = texelFetch(_F0_IT, tableOffset + 4 * i + 1).x;
+    int fidx2 = texelFetch(_F0_IT, tableOffset + 4 * i + 2).x;
+    int fidx3 = texelFetch(_F0_IT, tableOffset + 4 * i + 3).x;
+
+    Vertex dst;
+    clear(dst);
+    addWithWeight(dst, readVertex(fidx0), 0.25);
+    addWithWeight(dst, readVertex(fidx1), 0.25);
+    addWithWeight(dst, readVertex(fidx2), 0.25);
+    addWithWeight(dst, readVertex(fidx3), 0.25);
+    addVaryingWithWeight(dst, readVertex(fidx0), 0.25);
+    addVaryingWithWeight(dst, readVertex(fidx1), 0.25);
+    addVaryingWithWeight(dst, readVertex(fidx2), 0.25);
+    addVaryingWithWeight(dst, readVertex(fidx3), 0.25);
+    writeVertex(dst);
+}
+
+// Tri-quad face-vertices compute Kernel
+subroutine(computeKernelType)
+void catmarkComputeTriQuadFace()
+{
+    int i = gl_VertexID + indexStart;
+    int fidx0 = texelFetch(_F0_IT, tableOffset + 4 * i + 0).x;
+    int fidx1 = texelFetch(_F0_IT, tableOffset + 4 * i + 1).x;
+    int fidx2 = texelFetch(_F0_IT, tableOffset + 4 * i + 2).x;
+    int fidx3 = texelFetch(_F0_IT, tableOffset + 4 * i + 3).x;
+    bool triangle = (fidx2 == fidx3);
+    float weight = triangle ? 1.0f / 3.0f : 1.0f / 4.0f;
+
+    Vertex dst;
+    clear(dst);
+    addWithWeight(dst, readVertex(fidx0), weight);
+    addWithWeight(dst, readVertex(fidx1), weight);
+    addWithWeight(dst, readVertex(fidx2), weight);
+    addVaryingWithWeight(dst, readVertex(fidx0), weight);
+    addVaryingWithWeight(dst, readVertex(fidx1), weight);
+    addVaryingWithWeight(dst, readVertex(fidx2), weight);
+    if (!triangle) {
+        addWithWeight(dst, readVertex(fidx3), weight);
+        addVaryingWithWeight(dst, readVertex(fidx3), weight);
+    }
+
+    writeVertex(dst);
+}
+
 // Edge-vertices compute Kernel
 subroutine(computeKernelType)
 void catmarkComputeEdge()
@@ -227,6 +278,35 @@ void catmarkComputeEdge()
         addWithWeight(dst, readVertex(eidx.w), faceWeight);
     }
 
+    addVaryingWithWeight(dst, readVertex(eidx.x), 0.5f);
+    addVaryingWithWeight(dst, readVertex(eidx.y), 0.5f);
+
+    writeVertex(dst);
+}
+
+// Restricted edge-vertices compute Kernel
+subroutine(computeKernelType)
+void catmarkComputeRestrictedEdge()
+{
+    int i = gl_VertexID + indexStart + tableOffset;
+
+    Vertex dst;
+    clear(dst);
+
+#ifdef OPT_E0_IT_VEC4
+    ivec4 eidx = texelFetch(_E0_IT, i);
+#else
+    int eidx0 = texelFetch(_E0_IT, 4*i+0).x;
+    int eidx1 = texelFetch(_E0_IT, 4*i+1).x;
+    int eidx2 = texelFetch(_E0_IT, 4*i+2).x;
+    int eidx3 = texelFetch(_E0_IT, 4*i+3).x;
+    ivec4 eidx = ivec4(eidx0, eidx1, eidx2, eidx3);
+#endif
+
+    addWithWeight(dst, readVertex(eidx.x), 0.25f);
+    addWithWeight(dst, readVertex(eidx.y), 0.25f);
+    addWithWeight(dst, readVertex(eidx.z), 0.25f);
+    addWithWeight(dst, readVertex(eidx.w), 0.25f);
     addVaryingWithWeight(dst, readVertex(eidx.x), 0.5f);
     addVaryingWithWeight(dst, readVertex(eidx.y), 0.5f);
 
@@ -347,6 +427,94 @@ void catmarkComputeVertexB()
 #else
         addWithWeight(dst, readVertex(texelFetch(_V0_IT, h+j*2).x), weight * wp);
         addWithWeight(dst, readVertex(texelFetch(_V0_IT, h+j*2+1).x), weight * wp);
+#endif
+    }
+    addVaryingWithWeight(dst, readVertex(p), 1.0f);
+    writeVertex(dst);
+}
+
+// Restricted vertex-vertices compute Kernels 'A' / k_Crease and k_Corner rules
+subroutine(computeKernelType)
+void catmarkComputeRestrictedVertexA()
+{
+    int i = gl_VertexID + indexStart + tableOffset;
+    int vid = gl_VertexID + indexStart + vertexOffset;
+
+    int p     = texelFetch(_V0_ITa, 5*i+2).x;
+    int eidx0 = texelFetch(_V0_ITa, 5*i+3).x;
+    int eidx1 = texelFetch(_V0_ITa, 5*i+4).x;
+
+    Vertex dst;
+    clear(dst);
+
+    addWithWeight(dst, readVertex(p), 0.75f);
+    addWithWeight(dst, readVertex(eidx0), 0.125f);
+    addWithWeight(dst, readVertex(eidx1), 0.125f);
+    addVaryingWithWeight(dst, readVertex(p), 1.0f);
+
+    writeVertex(dst);
+}
+
+// Restricted vertex-vertices compute Kernels 'B' / regular k_Dart and k_Smooth rules
+subroutine(computeKernelType)
+void catmarkComputeRestrictedVertexB1()
+{
+    int i = gl_VertexID + indexStart + tableOffset;
+
+    int h = texelFetch(_V0_ITa, 5*i).x;
+#ifdef OPT_CATMARK_V_IT_VEC2
+    int h2 = h/2;
+#endif
+    int p = texelFetch(_V0_ITa, 5*i+2).x;
+
+    Vertex dst;
+    clear(dst);
+
+    addWithWeight(dst, readVertex(p), 0.5f);
+
+    for(int j = 0; j < 4; ++j){
+#ifdef OPT_CATMARK_V_IT_VEC2
+        ivec2 v0it = texelFetch(_V0_IT, h2+j).xy;
+        addWithWeight(dst, readVertex(v0it.x), 0.0625f);
+        addWithWeight(dst, readVertex(v0it.y), 0.0625f);
+#else
+        addWithWeight(dst, readVertex(texelFetch(_V0_IT, h+j*2).x), 0.0625f);
+        addWithWeight(dst, readVertex(texelFetch(_V0_IT, h+j*2+1).x), 0.0625f);
+#endif
+    }
+    addVaryingWithWeight(dst, readVertex(p), 1.0f);
+    writeVertex(dst);
+}
+
+// Restricted vertex-vertices compute Kernels 'B' / irregular k_Dart and k_Smooth rules
+subroutine(computeKernelType)
+void catmarkComputeRestrictedVertexB2()
+{
+    int i = gl_VertexID + indexStart + tableOffset;
+
+    int h = texelFetch(_V0_ITa, 5*i).x;
+#ifdef OPT_CATMARK_V_IT_VEC2
+    int h2 = h/2;
+#endif
+    int n = texelFetch(_V0_ITa, 5*i+1).x;
+    int p = texelFetch(_V0_ITa, 5*i+2).x;
+
+    float wp = 1.0/float(n*n);
+    float wv = (n-2.0) * n * wp;
+
+    Vertex dst;
+    clear(dst);
+
+    addWithWeight(dst, readVertex(p), wv);
+
+    for(int j = 0; j < n; ++j){
+#ifdef OPT_CATMARK_V_IT_VEC2
+        ivec2 v0it = texelFetch(_V0_IT, h2+j).xy;
+        addWithWeight(dst, readVertex(v0it.x), wp);
+        addWithWeight(dst, readVertex(v0it.y), wp);
+#else
+        addWithWeight(dst, readVertex(texelFetch(_V0_IT, h+j*2).x), wp);
+        addWithWeight(dst, readVertex(texelFetch(_V0_IT, h+j*2+1).x), wp);
 #endif
     }
     addVaryingWithWeight(dst, readVertex(p), 1.0f);

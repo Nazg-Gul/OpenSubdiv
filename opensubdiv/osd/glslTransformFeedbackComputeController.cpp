@@ -207,7 +207,29 @@ OsdGLSLTransformFeedbackComputeController::ApplyCatmarkFaceVerticesKernel(
         batch.GetVertexOffset(), batch.GetTableOffset(), batch.GetStart(), batch.GetEnd());
 }
 
+void
+OsdGLSLTransformFeedbackComputeController::ApplyCatmarkQuadFaceVerticesKernel(
+    FarKernelBatch const &batch, OsdGLSLTransformFeedbackComputeContext const *context) const {
 
+    assert(context);
+
+    _currentBindState.kernelBundle->ApplyCatmarkQuadFaceVerticesKernel(
+        _currentBindState.vertexBuffer, _currentBindState.varyingBuffer,
+        _currentBindState.vertexDesc.offset, _currentBindState.varyingDesc.offset,
+        batch.GetVertexOffset(), batch.GetTableOffset(), batch.GetStart(), batch.GetEnd());
+}
+
+void
+OsdGLSLTransformFeedbackComputeController::ApplyCatmarkTriQuadFaceVerticesKernel(
+    FarKernelBatch const &batch, OsdGLSLTransformFeedbackComputeContext const *context) const {
+
+    assert(context);
+
+    _currentBindState.kernelBundle->ApplyCatmarkTriQuadFaceVerticesKernel(
+        _currentBindState.vertexBuffer, _currentBindState.varyingBuffer,
+        _currentBindState.vertexDesc.offset, _currentBindState.varyingDesc.offset,
+        batch.GetVertexOffset(), batch.GetTableOffset(), batch.GetStart(), batch.GetEnd());
+}
 
 void
 OsdGLSLTransformFeedbackComputeController::ApplyCatmarkEdgeVerticesKernel(
@@ -216,6 +238,18 @@ OsdGLSLTransformFeedbackComputeController::ApplyCatmarkEdgeVerticesKernel(
     assert(context);
 
     _currentBindState.kernelBundle->ApplyCatmarkEdgeVerticesKernel(
+        _currentBindState.vertexBuffer, _currentBindState.varyingBuffer,
+        _currentBindState.vertexDesc.offset, _currentBindState.varyingDesc.offset,
+        batch.GetVertexOffset(), batch.GetTableOffset(), batch.GetStart(), batch.GetEnd());
+}
+
+void
+OsdGLSLTransformFeedbackComputeController::ApplyCatmarkRestrictedEdgeVerticesKernel(
+    FarKernelBatch const &batch, OsdGLSLTransformFeedbackComputeContext const *context) const {
+
+    assert(context);
+
+    _currentBindState.kernelBundle->ApplyCatmarkRestrictedEdgeVerticesKernel(
         _currentBindState.vertexBuffer, _currentBindState.varyingBuffer,
         _currentBindState.vertexDesc.offset, _currentBindState.varyingDesc.offset,
         batch.GetVertexOffset(), batch.GetTableOffset(), batch.GetStart(), batch.GetEnd());
@@ -255,6 +289,42 @@ OsdGLSLTransformFeedbackComputeController::ApplyCatmarkVertexVerticesKernelA2(
         _currentBindState.vertexBuffer, _currentBindState.varyingBuffer,
         _currentBindState.vertexDesc.offset, _currentBindState.varyingDesc.offset,
         batch.GetVertexOffset(), batch.GetTableOffset(), batch.GetStart(), batch.GetEnd(), true);
+}
+
+void
+OsdGLSLTransformFeedbackComputeController::ApplyCatmarkRestrictedVertexVerticesKernelB1(
+    FarKernelBatch const &batch, OsdGLSLTransformFeedbackComputeContext const *context) const {
+
+    assert(context);
+
+    _currentBindState.kernelBundle->ApplyCatmarkRestrictedVertexVerticesKernelB1(
+        _currentBindState.vertexBuffer, _currentBindState.varyingBuffer,
+        _currentBindState.vertexDesc.offset, _currentBindState.varyingDesc.offset,
+        batch.GetVertexOffset(), batch.GetTableOffset(), batch.GetStart(), batch.GetEnd());
+}
+
+void
+OsdGLSLTransformFeedbackComputeController::ApplyCatmarkRestrictedVertexVerticesKernelB2(
+    FarKernelBatch const &batch, OsdGLSLTransformFeedbackComputeContext const *context) const {
+
+    assert(context);
+
+    _currentBindState.kernelBundle->ApplyCatmarkRestrictedVertexVerticesKernelB2(
+        _currentBindState.vertexBuffer, _currentBindState.varyingBuffer,
+        _currentBindState.vertexDesc.offset, _currentBindState.varyingDesc.offset,
+        batch.GetVertexOffset(), batch.GetTableOffset(), batch.GetStart(), batch.GetEnd());
+}
+
+void
+OsdGLSLTransformFeedbackComputeController::ApplyCatmarkRestrictedVertexVerticesKernelA(
+    FarKernelBatch const &batch, OsdGLSLTransformFeedbackComputeContext const *context) const {
+
+    assert(context);
+
+    _currentBindState.kernelBundle->ApplyCatmarkRestrictedVertexVerticesKernelA(
+        _currentBindState.vertexBuffer, _currentBindState.varyingBuffer,
+        _currentBindState.vertexDesc.offset, _currentBindState.varyingDesc.offset,
+        batch.GetVertexOffset(), batch.GetTableOffset(), batch.GetStart(), batch.GetEnd());
 }
 
 void

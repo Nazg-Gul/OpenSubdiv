@@ -68,7 +68,22 @@ public:
         int vertexOffset, int varyingOffset,
         int offset, int tableOffset, int start, int end);
 
+    void ApplyCatmarkQuadFaceVerticesKernel(
+        GLuint vertexBuffer, GLuint varyingBuffer,
+        int vertexOffset, int varyingOffset,
+        int offset, int tableOffset, int start, int end);
+
+    void ApplyCatmarkTriQuadFaceVerticesKernel(
+        GLuint vertexBuffer, GLuint varyingBuffer,
+        int vertexOffset, int varyingOffset,
+        int offset, int tableOffset, int start, int end);
+
     void ApplyCatmarkEdgeVerticesKernel(
+        GLuint vertexBuffer, GLuint varyingBuffer,
+        int vertexOffset, int varyingOffset,
+        int offset, int tableOffset, int start, int end);
+
+    void ApplyCatmarkRestrictedEdgeVerticesKernel(
         GLuint vertexBuffer, GLuint varyingBuffer,
         int vertexOffset, int varyingOffset,
         int offset, int tableOffset, int start, int end);
@@ -82,6 +97,21 @@ public:
         GLuint vertexBuffer, GLuint varyingBuffer,
         int vertexOffset, int varyingOffset,
         int offset, int tableOffset, int start, int end, bool pass);
+
+    void ApplyCatmarkRestrictedVertexVerticesKernelB1(
+        GLuint vertexBuffer, GLuint varyingBuffer,
+        int vertexOffset, int varyingOffset,
+        int offset, int tableOffset, int start, int end);
+
+    void ApplyCatmarkRestrictedVertexVerticesKernelB2(
+        GLuint vertexBuffer, GLuint varyingBuffer,
+        int vertexOffset, int varyingOffset,
+        int offset, int tableOffset, int start, int end);
+
+    void ApplyCatmarkRestrictedVertexVerticesKernelA(
+        GLuint vertexBuffer, GLuint varyingBuffer,
+        int vertexOffset, int varyingOffset,
+        int offset, int tableOffset, int start, int end);
 
     void ApplyLoopEdgeVerticesKernel(
         GLuint vertexBuffer, GLuint varyingBuffer,
@@ -181,7 +211,13 @@ protected:
 
     GLuint _subComputeFace; // general face-vertex kernel (all schemes)
 
+    GLuint _subComputeQuadFace; // quad face-vertex kernel (catmark scheme)
+
+    GLuint _subComputeTriQuadFace; // tri-quad face-vertex kernel (catmark scheme)
+
     GLuint _subComputeEdge; // edge-vertex kernel (catmark + loop schemes)
+
+    GLuint _subComputeRestrictedEdge; // restricted edge-vertex kernel (catmark scheme)
 
     GLuint _subComputeBilinearEdge; // edge-vertex kernel (bilinear scheme)
 
@@ -190,6 +226,12 @@ protected:
     GLuint _subComputeVertexA; // vertex-vertex kernel A (catmark + loop schemes)
 
     GLuint _subComputeCatmarkVertexB;// vertex-vertex kernel B (catmark scheme)
+
+    GLuint _subComputeRestrictedVertexA; // restricted vertex-vertex kernel A (catmark scheme)
+
+    GLuint _subComputeRestrictedVertexB1; // restricted vertex-vertex kernel B1 (catmark scheme)
+
+    GLuint _subComputeRestrictedVertexB2; // restricted vertex-vertex kernel B2 (catmark scheme)
 
     GLuint _subComputeLoopVertexB; // vertex-vertex kernel B (loop scheme)
 

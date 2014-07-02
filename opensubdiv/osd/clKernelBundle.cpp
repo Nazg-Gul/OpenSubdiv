@@ -51,9 +51,15 @@ OsdCLKernelBundle::OsdCLKernelBundle() :
     _clBilinearEdge(NULL),
     _clBilinearVertex(NULL),
     _clCatmarkFace(NULL),
+    _clCatmarkQuadFace(NULL),
+    _clCatmarkTriQuadFace(NULL),
     _clCatmarkEdge(NULL),
+    _clCatmarkRestrictedEdge(NULL),
     _clCatmarkVertexA(NULL),
     _clCatmarkVertexB(NULL),
+    _clCatmarkRestrictedVertexA(NULL),
+    _clCatmarkRestrictedVertexB1(NULL),
+    _clCatmarkRestrictedVertexB2(NULL),
     _clLoopEdge(NULL),
     _clLoopVertexA(NULL),
     _clLoopVertexB(NULL),
@@ -72,12 +78,24 @@ OsdCLKernelBundle::~OsdCLKernelBundle() {
 
     if (_clCatmarkFace)
         clReleaseKernel(_clCatmarkFace);
+    if (_clCatmarkQuadFace)
+        clReleaseKernel(_clCatmarkQuadFace);
+    if (_clCatmarkTriQuadFace)
+        clReleaseKernel(_clCatmarkTriQuadFace);
     if (_clCatmarkEdge)
         clReleaseKernel(_clCatmarkEdge);
+    if (_clCatmarkRestrictedEdge)
+        clReleaseKernel(_clCatmarkRestrictedEdge);
     if (_clCatmarkVertexA)
         clReleaseKernel(_clCatmarkVertexA);
     if (_clCatmarkVertexB)
         clReleaseKernel(_clCatmarkVertexB);
+    if (_clCatmarkRestrictedVertexA)
+        clReleaseKernel(_clCatmarkRestrictedVertexA);
+    if (_clCatmarkRestrictedVertexB1)
+        clReleaseKernel(_clCatmarkRestrictedVertexB1);
+    if (_clCatmarkRestrictedVertexB2)
+        clReleaseKernel(_clCatmarkRestrictedVertexB2);
 
     if (_clLoopEdge)
         clReleaseKernel(_clLoopEdge);
@@ -145,16 +163,22 @@ OsdCLKernelBundle::Compile(cl_context clContext,
         return false;
     }
 
-    _clBilinearEdge   = buildKernel(_clProgram, "computeBilinearEdge");
-    _clBilinearVertex = buildKernel(_clProgram, "computeBilinearVertex");
-    _clCatmarkFace    = buildKernel(_clProgram, "computeFace");
-    _clCatmarkEdge    = buildKernel(_clProgram, "computeEdge");
-    _clCatmarkVertexA = buildKernel(_clProgram, "computeVertexA");
-    _clCatmarkVertexB = buildKernel(_clProgram, "computeVertexB");
-    _clLoopEdge       = buildKernel(_clProgram, "computeEdge");
-    _clLoopVertexA    = buildKernel(_clProgram, "computeVertexA");
-    _clLoopVertexB    = buildKernel(_clProgram, "computeLoopVertexB");
-    _clVertexEditAdd  = buildKernel(_clProgram, "editVertexAdd");
+    _clBilinearEdge              = buildKernel(_clProgram, "computeBilinearEdge");
+    _clBilinearVertex            = buildKernel(_clProgram, "computeBilinearVertex");
+    _clCatmarkFace               = buildKernel(_clProgram, "computeFace");
+    _clCatmarkQuadFace           = buildKernel(_clProgram, "computeQuadFace");
+    _clCatmarkTriQuadFace        = buildKernel(_clProgram, "computeTriQuadFace");
+    _clCatmarkEdge               = buildKernel(_clProgram, "computeEdge");
+    _clCatmarkRestrictedEdge     = buildKernel(_clProgram, "computeRestrictedEdge");
+    _clCatmarkVertexA            = buildKernel(_clProgram, "computeVertexA");
+    _clCatmarkVertexB            = buildKernel(_clProgram, "computeVertexB");
+    _clCatmarkRestrictedVertexA  = buildKernel(_clProgram, "computeRestrictedVertexA");
+    _clCatmarkRestrictedVertexB1 = buildKernel(_clProgram, "computeRestrictedVertexB1");
+    _clCatmarkRestrictedVertexB2 = buildKernel(_clProgram, "computeRestrictedVertexB2");
+    _clLoopEdge                  = buildKernel(_clProgram, "computeEdge");
+    _clLoopVertexA               = buildKernel(_clProgram, "computeVertexA");
+    _clLoopVertexB               = buildKernel(_clProgram, "computeLoopVertexB");
+    _clVertexEditAdd             = buildKernel(_clProgram, "editVertexAdd");
 
     return true;
 }

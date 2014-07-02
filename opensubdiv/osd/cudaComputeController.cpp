@@ -185,6 +185,64 @@ OsdCudaComputeController::ApplyCatmarkFaceVerticesKernel(
 }
 
 void
+OsdCudaComputeController::ApplyCatmarkQuadFaceVerticesKernel(
+    FarKernelBatch const &batch, OsdCudaComputeContext const *context) const {
+
+    assert(context);
+
+    const OsdCudaTable * F_IT = context->GetTable(FarSubdivisionTables::F_IT);
+    assert(F_IT);
+
+    CUdeviceptr vertex = _currentBindState.GetOffsettedVertexBuffer();
+    CUdeviceptr varying = _currentBindState.GetOffsettedVaryingBuffer();
+    CUdeviceptr F_IT_mem = F_IT->GetCudaMemory();
+    int vertex_offset = batch.GetVertexOffset();
+    int table_offset = batch.GetTableOffset();
+    int start = batch.GetStart();
+    int end = batch.GetEnd();
+
+    cuda_run_kernel(OsdCudaComputeQuadFace,
+                    &vertex, &varying,
+                    (void *)&_currentBindState.vertexDesc.length,
+                    (void *)&_currentBindState.vertexDesc.stride,
+                    (void *)&_currentBindState.varyingDesc.length,
+                    (void *)&_currentBindState.varyingDesc.stride,
+                    &F_IT_mem,
+                    &vertex_offset,
+                    &table_offset,
+                    &start, &end);
+}
+
+void
+OsdCudaComputeController::ApplyCatmarkTriQuadFaceVerticesKernel(
+    FarKernelBatch const &batch, OsdCudaComputeContext const *context) const {
+
+    assert(context);
+
+    const OsdCudaTable * F_IT = context->GetTable(FarSubdivisionTables::F_IT);
+    assert(F_IT);
+
+    CUdeviceptr vertex = _currentBindState.GetOffsettedVertexBuffer();
+    CUdeviceptr varying = _currentBindState.GetOffsettedVaryingBuffer();
+    CUdeviceptr F_IT_mem = F_IT->GetCudaMemory();
+    int vertex_offset = batch.GetVertexOffset();
+    int table_offset = batch.GetTableOffset();
+    int start = batch.GetStart();
+    int end = batch.GetEnd();
+
+    cuda_run_kernel(OsdCudaComputeTriQuadFace,
+                    &vertex, &varying,
+                    (void *)&_currentBindState.vertexDesc.length,
+                    (void *)&_currentBindState.vertexDesc.stride,
+                    (void *)&_currentBindState.varyingDesc.length,
+                    (void *)&_currentBindState.varyingDesc.stride,
+                    &F_IT_mem,
+                    &vertex_offset,
+                    &table_offset,
+                    &start, &end);
+}
+
+void
 OsdCudaComputeController::ApplyCatmarkEdgeVerticesKernel(
     FarKernelBatch const &batch, OsdCudaComputeContext const *context) const {
 
@@ -212,6 +270,35 @@ OsdCudaComputeController::ApplyCatmarkEdgeVerticesKernel(
                     (void *)&_currentBindState.varyingDesc.stride,
                     &E_IT_mem,
                     &E_W_mem,
+                    &vertex_offset,
+                    &table_offset,
+                    &start, &end);
+}
+
+void
+OsdCudaComputeController::ApplyCatmarkRestrictedEdgeVerticesKernel(
+    FarKernelBatch const &batch, OsdCudaComputeContext const *context) const {
+
+    assert(context);
+
+    const OsdCudaTable * E_IT = context->GetTable(FarSubdivisionTables::E_IT);
+    assert(E_IT);
+
+    CUdeviceptr vertex = _currentBindState.GetOffsettedVertexBuffer();
+    CUdeviceptr varying = _currentBindState.GetOffsettedVaryingBuffer();
+    CUdeviceptr E_IT_mem = E_IT->GetCudaMemory();
+    int vertex_offset = batch.GetVertexOffset();
+    int table_offset = batch.GetTableOffset();
+    int start = batch.GetStart();
+    int end = batch.GetEnd();
+
+    cuda_run_kernel(OsdCudaComputeRestrictedEdge,
+                    &vertex, &varying,
+                    (void *)&_currentBindState.vertexDesc.length,
+                    (void *)&_currentBindState.vertexDesc.stride,
+                    (void *)&_currentBindState.varyingDesc.length,
+                    (void *)&_currentBindState.varyingDesc.stride,
+                    &E_IT_mem,
                     &vertex_offset,
                     &table_offset,
                     &start, &end);
@@ -320,6 +407,101 @@ OsdCudaComputeController::ApplyCatmarkVertexVerticesKernelA2(
                     &vertex_offset,
                     &table_offset,
                     &start, &end, &pass);
+}
+
+void
+OsdCudaComputeController::ApplyCatmarkRestrictedVertexVerticesKernelB1(
+    FarKernelBatch const &batch, OsdCudaComputeContext const *context) const {
+
+    assert(context);
+
+    const OsdCudaTable * V_ITa = context->GetTable(FarSubdivisionTables::V_ITa);
+    const OsdCudaTable * V_IT = context->GetTable(FarSubdivisionTables::V_IT);
+    assert(V_ITa);
+    assert(V_IT);
+
+    CUdeviceptr vertex = _currentBindState.GetOffsettedVertexBuffer();
+    CUdeviceptr varying = _currentBindState.GetOffsettedVaryingBuffer();
+    CUdeviceptr V_ITa_mem = V_ITa->GetCudaMemory();
+    CUdeviceptr V_IT_mem = V_IT->GetCudaMemory();
+    int vertex_offset = batch.GetVertexOffset();
+    int table_offset = batch.GetTableOffset();
+    int start = batch.GetStart();
+    int end = batch.GetEnd();
+
+    cuda_run_kernel(OsdCudaComputeRestrictedVertexB1,
+                    &vertex, &varying,
+                    (void *)&_currentBindState.vertexDesc.length,
+                    (void *)&_currentBindState.vertexDesc.stride,
+                    (void *)&_currentBindState.varyingDesc.length,
+                    (void *)&_currentBindState.varyingDesc.stride,
+                    &V_ITa_mem,
+                    &V_IT_mem,
+                    &vertex_offset,
+                    &table_offset,
+                    &start, &end);
+}
+
+void
+OsdCudaComputeController::ApplyCatmarkRestrictedVertexVerticesKernelB2(
+    FarKernelBatch const &batch, OsdCudaComputeContext const *context) const {
+
+    assert(context);
+
+    const OsdCudaTable * V_ITa = context->GetTable(FarSubdivisionTables::V_ITa);
+    const OsdCudaTable * V_IT = context->GetTable(FarSubdivisionTables::V_IT);
+    assert(V_ITa);
+    assert(V_IT);
+
+    CUdeviceptr vertex = _currentBindState.GetOffsettedVertexBuffer();
+    CUdeviceptr varying = _currentBindState.GetOffsettedVaryingBuffer();
+    CUdeviceptr V_ITa_mem = V_ITa->GetCudaMemory();
+    CUdeviceptr V_IT_mem = V_IT->GetCudaMemory();
+    int vertex_offset = batch.GetVertexOffset();
+    int table_offset = batch.GetTableOffset();
+    int start = batch.GetStart();
+    int end = batch.GetEnd();
+
+    cuda_run_kernel(OsdCudaComputeRestrictedVertexB2,
+                    &vertex, &varying,
+                    (void *)&_currentBindState.vertexDesc.length,
+                    (void *)&_currentBindState.vertexDesc.stride,
+                    (void *)&_currentBindState.varyingDesc.length,
+                    (void *)&_currentBindState.varyingDesc.stride,
+                    &V_ITa_mem,
+                    &V_IT_mem,
+                    &vertex_offset,
+                    &table_offset,
+                    &start, &end);
+}
+
+void
+OsdCudaComputeController::ApplyCatmarkRestrictedVertexVerticesKernelA(
+    FarKernelBatch const &batch, OsdCudaComputeContext const *context) const {
+
+    assert(context);
+
+    const OsdCudaTable * V_ITa = context->GetTable(FarSubdivisionTables::V_ITa);
+    assert(V_ITa);
+
+    CUdeviceptr vertex = _currentBindState.GetOffsettedVertexBuffer();
+    CUdeviceptr varying = _currentBindState.GetOffsettedVaryingBuffer();
+    CUdeviceptr V_ITa_mem = V_ITa->GetCudaMemory();
+    int vertex_offset = batch.GetVertexOffset();
+    int table_offset = batch.GetTableOffset();
+    int start = batch.GetStart();
+    int end = batch.GetEnd();
+
+    cuda_run_kernel(OsdCudaComputeRestrictedVertexA,
+                    &vertex, &varying,
+                    (void *)&_currentBindState.vertexDesc.length,
+                    (void *)&_currentBindState.vertexDesc.stride,
+                    (void *)&_currentBindState.varyingDesc.length,
+                    (void *)&_currentBindState.varyingDesc.stride,
+                    &V_ITa_mem,
+                    &vertex_offset,
+                    &table_offset,
+                    &start, &end);
 }
 
 void

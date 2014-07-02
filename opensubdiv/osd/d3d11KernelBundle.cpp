@@ -52,11 +52,17 @@ OsdD3D11ComputeKernelBundle::OsdD3D11ComputeKernelBundle(
     _classLinkage(0),
     _kernelCB(0),
     _kernelComputeFace(0),
+    _kernelComputeQuadFace(0),
+    _kernelComputeTriQuadFace(0),
     _kernelComputeEdge(0),
+    _kernelComputeRestrictedEdge(0),
     _kernelComputeBilinearEdge(0),
     _kernelComputeVertex(0),
     _kernelComputeVertexA(0),
     _kernelComputeCatmarkVertexB(0),
+    _kernelComputeCatmarkRestrictedVertexA(0),
+    _kernelComputeCatmarkRestrictedVertexB1(0),
+    _kernelComputeCatmarkRestrictedVertexB2(0),
     _kernelComputeLoopVertexB(0),
     _kernelEditAdd(0) {
 
@@ -69,11 +75,17 @@ OsdD3D11ComputeKernelBundle::~OsdD3D11ComputeKernelBundle() {
     SAFE_RELEASE(_classLinkage);
     SAFE_RELEASE(_kernelCB);
     SAFE_RELEASE(_kernelComputeFace);
+    SAFE_RELEASE(_kernelComputeQuadFace);
+    SAFE_RELEASE(_kernelComputeTriQuadFace);
     SAFE_RELEASE(_kernelComputeEdge);
+    SAFE_RELEASE(_kernelComputeRestrictedEdge);
     SAFE_RELEASE(_kernelComputeBilinearEdge);
     SAFE_RELEASE(_kernelComputeVertex);
     SAFE_RELEASE(_kernelComputeVertexA);
     SAFE_RELEASE(_kernelComputeCatmarkVertexB);
+    SAFE_RELEASE(_kernelComputeCatmarkRestrictedVertexA);
+    SAFE_RELEASE(_kernelComputeCatmarkRestrictedVertexB1);
+    SAFE_RELEASE(_kernelComputeCatmarkRestrictedVertexB2);
     SAFE_RELEASE(_kernelComputeLoopVertexB);
     SAFE_RELEASE(_kernelEditAdd);
 }
@@ -164,8 +176,17 @@ OsdD3D11ComputeKernelBundle::Compile(
         "catmarkComputeFace", 0, &_kernelComputeFace);
     assert(_kernelComputeFace);
     _classLinkage->GetClassInstance(
+        "catmarkComputeQuadFace", 0, &_kernelComputeQuadFace);
+    assert(_kernelComputeQuadFace);
+    _classLinkage->GetClassInstance(
+        "catmarkComputeTriQuadFace", 0, &_kernelComputeTriQuadFace);
+    assert(_kernelComputeTriQuadFace);
+    _classLinkage->GetClassInstance(
         "catmarkComputeEdge", 0, &_kernelComputeEdge);
     assert(_kernelComputeEdge);
+    _classLinkage->GetClassInstance(
+        "catmarkComputeRestrictedEdge", 0, &_kernelComputeRestrictedEdge);
+    assert(_kernelComputeRestrictedEdge);
     _classLinkage->GetClassInstance(
         "bilinearComputeEdge", 0, &_kernelComputeBilinearEdge);
     assert(_kernelComputeBilinearEdge);
@@ -178,6 +199,15 @@ OsdD3D11ComputeKernelBundle::Compile(
     _classLinkage->GetClassInstance(
         "catmarkComputeVertexB", 0, &_kernelComputeCatmarkVertexB);
     assert(_kernelComputeCatmarkVertexB);
+    _classLinkage->GetClassInstance(
+        "catmarkComputeRestrictedVertexA", 0, &_kernelComputeCatmarkRestrictedVertexA);
+    assert(_kernelComputeCatmarkRestrictedVertexA);
+    _classLinkage->GetClassInstance(
+        "catmarkComputeRestrictedVertexB1", 0, &_kernelComputeCatmarkRestrictedVertexB1);
+    assert(_kernelComputeCatmarkRestrictedVertexB1);
+    _classLinkage->GetClassInstance(
+        "catmarkComputeRestrictedVertexB2", 0, &_kernelComputeCatmarkRestrictedVertexB2);
+    assert(_kernelComputeCatmarkRestrictedVertexA);
     _classLinkage->GetClassInstance(
         "loopComputeVertexB", 0, &_kernelComputeLoopVertexB);
     assert(_kernelComputeLoopVertexB);
@@ -303,6 +333,38 @@ OsdD3D11ComputeKernelBundle::ApplyCatmarkFaceVerticesKernel(
 }
 
 void
+OsdD3D11ComputeKernelBundle::ApplyCatmarkQuadFaceVerticesKernel(
+    int vertexOffset, int tableOffset, int start, int end,
+    int vertexBaseOffset, int varyingBaseOffset) {
+
+    KernelCB args;
+    ZeroMemory(&args, sizeof(args));
+    args.vertexOffset = vertexOffset;
+    args.tableOffset = tableOffset;
+    args.indexStart = start;
+    args.indexEnd = end;
+    args.vertexBaseOffset = vertexBaseOffset;
+    args.varyingBaseOffset = varyingBaseOffset;
+    dispatchCompute(_kernelComputeQuadFace, args);
+}
+
+void
+OsdD3D11ComputeKernelBundle::ApplyCatmarkTriQuadFaceVerticesKernel(
+    int vertexOffset, int tableOffset, int start, int end,
+    int vertexBaseOffset, int varyingBaseOffset) {
+
+    KernelCB args;
+    ZeroMemory(&args, sizeof(args));
+    args.vertexOffset = vertexOffset;
+    args.tableOffset = tableOffset;
+    args.indexStart = start;
+    args.indexEnd = end;
+    args.vertexBaseOffset = vertexBaseOffset;
+    args.varyingBaseOffset = varyingBaseOffset;
+    dispatchCompute(_kernelComputeTriQuadFace, args);
+}
+
+void
 OsdD3D11ComputeKernelBundle::ApplyCatmarkEdgeVerticesKernel(
     int vertexOffset, int tableOffset, int start, int end,
     int vertexBaseOffset, int varyingBaseOffset) {
@@ -316,6 +378,22 @@ OsdD3D11ComputeKernelBundle::ApplyCatmarkEdgeVerticesKernel(
     args.vertexBaseOffset = vertexBaseOffset;
     args.varyingBaseOffset = varyingBaseOffset;
     dispatchCompute(_kernelComputeEdge, args);
+}
+
+void
+OsdD3D11ComputeKernelBundle::ApplyCatmarkRestrictedEdgeVerticesKernel(
+    int vertexOffset, int tableOffset, int start, int end,
+    int vertexBaseOffset, int varyingBaseOffset) {
+
+    KernelCB args;
+    ZeroMemory(&args, sizeof(args));
+    args.vertexOffset = vertexOffset;
+    args.tableOffset = tableOffset;
+    args.indexStart = start;
+    args.indexEnd = end;
+    args.vertexBaseOffset = vertexBaseOffset;
+    args.varyingBaseOffset = varyingBaseOffset;
+    dispatchCompute(_kernelComputeRestrictedEdge, args);
 }
 
 void
@@ -349,6 +427,54 @@ OsdD3D11ComputeKernelBundle::ApplyCatmarkVertexVerticesKernelA(
     args.vertexBaseOffset = vertexBaseOffset;
     args.varyingBaseOffset = varyingBaseOffset;
     dispatchCompute(_kernelComputeVertexA, args);
+}
+
+void
+OsdD3D11ComputeKernelBundle::ApplyCatmarkRestrictedVertexVerticesKernelB1(
+    int vertexOffset, int tableOffset, int start, int end,
+    int vertexBaseOffset, int varyingBaseOffset) {
+
+    KernelCB args;
+    ZeroMemory(&args, sizeof(args));
+    args.vertexOffset = vertexOffset;
+    args.tableOffset = tableOffset;
+    args.indexStart = start;
+    args.indexEnd = end;
+    args.vertexBaseOffset = vertexBaseOffset;
+    args.varyingBaseOffset = varyingBaseOffset;
+    dispatchCompute(_kernelComputeCatmarkRestrictedVertexB1, args);
+}
+
+void
+OsdD3D11ComputeKernelBundle::ApplyCatmarkRestrictedVertexVerticesKernelB2(
+    int vertexOffset, int tableOffset, int start, int end,
+    int vertexBaseOffset, int varyingBaseOffset) {
+
+    KernelCB args;
+    ZeroMemory(&args, sizeof(args));
+    args.vertexOffset = vertexOffset;
+    args.tableOffset = tableOffset;
+    args.indexStart = start;
+    args.indexEnd = end;
+    args.vertexBaseOffset = vertexBaseOffset;
+    args.varyingBaseOffset = varyingBaseOffset;
+    dispatchCompute(_kernelComputeCatmarkRestrictedVertexB2, args);
+}
+
+void
+OsdD3D11ComputeKernelBundle::ApplyCatmarkRestrictedVertexVerticesKernelA(
+    int vertexOffset, int tableOffset, int start, int end,
+    int vertexBaseOffset, int varyingBaseOffset) {
+
+    KernelCB args;
+    ZeroMemory(&args, sizeof(args));
+    args.vertexOffset = vertexOffset;
+    args.tableOffset = tableOffset;
+    args.indexStart = start;
+    args.indexEnd = end;
+    args.vertexBaseOffset = vertexBaseOffset;
+    args.varyingBaseOffset = varyingBaseOffset;
+    dispatchCompute(_kernelComputeCatmarkRestrictedVertexA, args);
 }
 
 void

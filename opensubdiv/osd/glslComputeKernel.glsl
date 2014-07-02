@@ -178,7 +178,64 @@ void catmarkComputeFace()
     writeVertex(vid, dst);
 }
 
-// Edge-vertices compute Kernepl
+// Quad face-vertices compute Kernel
+subroutine(computeKernelType)
+void catmarkComputeQuadFace()
+{
+    int i = int(gl_GlobalInvocationID.x) + indexStart;
+    if (i >= indexEnd) return;
+    int vid = i + vertexOffset;
+    int fidx0 = _F_IT[tableOffset + i * 4 + 0];
+    int fidx1 = _F_IT[tableOffset + i * 4 + 1];
+    int fidx2 = _F_IT[tableOffset + i * 4 + 2];
+    int fidx3 = _F_IT[tableOffset + i * 4 + 3];
+
+    Vertex dst;
+    clear(dst);
+    addWithWeight(dst, readVertex(fidx0), 0.25);
+    addWithWeight(dst, readVertex(fidx1), 0.25);
+    addWithWeight(dst, readVertex(fidx2), 0.25);
+    addWithWeight(dst, readVertex(fidx3), 0.25);
+    addVaryingWithWeight(dst, readVertex(fidx0), 0.25);
+    addVaryingWithWeight(dst, readVertex(fidx1), 0.25);
+    addVaryingWithWeight(dst, readVertex(fidx2), 0.25);
+    addVaryingWithWeight(dst, readVertex(fidx3), 0.25);
+
+    writeVertex(vid, dst);
+}
+
+// Tri-quad face-vertices compute Kernel
+subroutine(computeKernelType)
+void catmarkComputeTriQuadFace()
+{
+    int i = int(gl_GlobalInvocationID.x) + indexStart;
+    if (i >= indexEnd) return;
+    int vid = i + vertexOffset;
+    int fidx0 = _F_IT[tableOffset + i * 4 + 0];
+    int fidx1 = _F_IT[tableOffset + i * 4 + 1];
+    int fidx2 = _F_IT[tableOffset + i * 4 + 2];
+    int fidx3 = _F_IT[tableOffset + i * 4 + 3];
+
+    bool triangle = (fidx2 == fidx3);
+    float weight = triangle ? 1.0f / 3.0f : 1.0f / 4.0f;
+
+    Vertex dst;
+    clear(dst);
+    addWithWeight(dst, readVertex(fidx0), weight);
+    addWithWeight(dst, readVertex(fidx1), weight);
+    addWithWeight(dst, readVertex(fidx2), weight);
+    addVaryingWithWeight(dst, readVertex(fidx0), weight);
+    addVaryingWithWeight(dst, readVertex(fidx1), weight);
+    addVaryingWithWeight(dst, readVertex(fidx2), weight);
+    if (!triangle) {
+        addWithWeight(dst, readVertex(fidx3), weight);
+        addVaryingWithWeight(dst, readVertex(fidx3), weight);
+    }
+
+    writeVertex(vid, dst);
+}
+
+// Edge-vertices compute Kernel
 subroutine(computeKernelType)
 void catmarkComputeEdge()
 {
@@ -209,6 +266,34 @@ void catmarkComputeEdge()
         addWithWeight(dst, readVertex(eidx.w), faceWeight);
     }
 
+    addVaryingWithWeight(dst, readVertex(eidx.x), 0.5f);
+    addVaryingWithWeight(dst, readVertex(eidx.y), 0.5f);
+
+    writeVertex(vid, dst);
+}
+
+// Restricted edge-vertices compute Kernel
+subroutine(computeKernelType)
+void catmarkComputeRestrictedEdge()
+{
+    int i = int(gl_GlobalInvocationID.x) + indexStart;
+    if (i >= indexEnd) return;
+    int vid = i + vertexOffset;
+    i += tableOffset;
+
+    Vertex dst;
+    clear(dst);
+
+    int eidx0 = _E_IT[4*i+0];
+    int eidx1 = _E_IT[4*i+1];
+    int eidx2 = _E_IT[4*i+2];
+    int eidx3 = _E_IT[4*i+3];
+    ivec4 eidx = ivec4(eidx0, eidx1, eidx2, eidx3);
+
+    addWithWeight(dst, readVertex(eidx.x), 0.25f);
+    addWithWeight(dst, readVertex(eidx.y), 0.25f);
+    addWithWeight(dst, readVertex(eidx.z), 0.25f);
+    addWithWeight(dst, readVertex(eidx.w), 0.25f);
     addVaryingWithWeight(dst, readVertex(eidx.x), 0.5f);
     addVaryingWithWeight(dst, readVertex(eidx.y), 0.5f);
 
@@ -326,6 +411,82 @@ void catmarkComputeVertexB()
     for(int j = 0; j < n; ++j){
         addWithWeight(dst, readVertex(_V_IT[h+j*2]), weight * wp);
         addWithWeight(dst, readVertex(_V_IT[h+j*2+1]), weight * wp);
+    }
+    addVaryingWithWeight(dst, readVertex(p), 1);
+    writeVertex(vid, dst);
+}
+
+// Restricted vertex-vertices compute Kernels 'A' / k_Crease and k_Corner rules
+subroutine(computeKernelType)
+void catmarkComputeRestrictedVertexA()
+{
+    int i = int(gl_GlobalInvocationID.x) + indexStart;
+    if (i >= indexEnd) return;
+    int vid = i + vertexOffset;
+    i += tableOffset;
+
+    int p     = _V_ITa[5*i+2];
+    int eidx0 = _V_ITa[5*i+3];
+    int eidx1 = _V_ITa[5*i+4];
+
+    Vertex dst;
+    clear(dst);
+
+    addWithWeight(dst, readVertex(p), 0.75f);
+    addWithWeight(dst, readVertex(eidx0), 0.125f);
+    addWithWeight(dst, readVertex(eidx1), 0.125f);
+    addVaryingWithWeight(dst, readVertex(p), 1);
+
+    writeVertex(vid, dst);
+}
+
+// Vertex-vertices compute Kernels 'B' / regular k_Dart and k_Smooth rules
+subroutine(computeKernelType)
+void catmarkComputeRestrictedVertexB1()
+{
+    int i = int(gl_GlobalInvocationID.x) + indexStart;
+    if (i >= indexEnd) return;
+    int vid = i + vertexOffset;
+    i += tableOffset;
+
+    int h = _V_ITa[5*i];
+    int p = _V_ITa[5*i+2];
+
+    Vertex dst;
+    clear(dst);
+
+    addWithWeight(dst, readVertex(p), 0.5f);
+
+    for(int j = 0; j < 8; ++j)
+        addWithWeight(dst, readVertex(_V_IT[h+j]), 0.0625f);
+    addVaryingWithWeight(dst, readVertex(p), 1);
+    writeVertex(vid, dst);
+}
+
+// Vertex-vertices compute Kernels 'B' / irregular k_Dart and k_Smooth rules
+subroutine(computeKernelType)
+void catmarkComputeRestrictedVertexB2()
+{
+    int i = int(gl_GlobalInvocationID.x) + indexStart;
+    if (i >= indexEnd) return;
+    int vid = i + vertexOffset;
+    i += tableOffset;
+
+    int h = _V_ITa[5*i];
+    int n = _V_ITa[5*i+1];
+    int p = _V_ITa[5*i+2];
+
+    float wp = 1.0/float(n*n);
+    float wv = (n-2.0) * n * wp;
+
+    Vertex dst;
+    clear(dst);
+
+    addWithWeight(dst, readVertex(p), wv);
+
+    for(int j = 0; j < n; ++j){
+        addWithWeight(dst, readVertex(_V_IT[h+j*2]), wp);
+        addWithWeight(dst, readVertex(_V_IT[h+j*2+1]), wp);
     }
     addVaryingWithWeight(dst, readVertex(p), 1);
     writeVertex(vid, dst);
