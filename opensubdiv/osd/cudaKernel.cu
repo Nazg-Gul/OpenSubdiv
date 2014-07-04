@@ -1166,7 +1166,7 @@ __global__ void
 OsdCudaComputeRestrictedVertexA(float *vertex, float *varying,
                                 int vertexLength, int vertexStride,
                                 int varyingLength, int varyingStride,
-                                int *V_ITa, int offset, int tableOffset, int start, int end, int pass)
+                                int *V_ITa, int offset, int tableOffset, int start, int end)
 {
 //    computeRestrictedVertexA<0, 3><<<512,32>>>(vertex, varying, V_ITa, offset, start, end);
     OPT_KERNEL(0, 0, computeRestrictedVertexA, (vertex, varying, V_ITa, offset, tableOffset, start, end));
