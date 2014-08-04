@@ -40,7 +40,10 @@
     #include <GLES2/gl2.h>
 #else
     #if defined(_WIN32)
-        #define W32_LEAN_AND_MEAN
+        #define WIN32_LEAN_AND_MEAN
+        #ifndef NOMINMAX
+        #    define NOMINMAX
+        #endif
         #include <windows.h>
     #endif
     #if defined(OSD_USES_GLEW)
