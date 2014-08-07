@@ -128,17 +128,20 @@ static bool HAS_CUDA_VERSION_4_0 () {
         cudaLoadSuccess = cuewInit() == CUEW_SUCCESS;
         if (not cudaLoadSuccess) {
             fprintf(stderr, "Loading CUDA failed.\n");
-        }
-#    endif
-        // Need to initialize CUDA here so getting device
-        // with the maximum FPLOS works fine.
-        cuda_assert(cuInit(0));
-
-        // This is to deal with cases like NVidia Optimus,
-        // when there might be CUDA library installed but
-        // NVidia card is not being active.
-        if (cutGetMaxGflopsDeviceId() < 0) {
             cudaLoadSuccess = false;
+        } else
+#    endif
+        {
+            // Need to initialize CUDA here so getting device
+            // with the maximum FPLOS works fine.
+            cuda_assert(cuInit(0));
+
+            // This is to deal with cases like NVidia Optimus,
+            // when there might be CUDA library installed but
+            // NVidia card is not being active.
+            if (cutGetMaxGflopsDeviceId() < 0) {
+                cudaLoadSuccess = false;
+            }
         }
     }
     return cudaLoadSuccess;
